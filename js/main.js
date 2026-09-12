@@ -226,7 +226,7 @@ function saveToLocalDatabase(entry) {
     console.log('Saved entry to local database:', entry);
 }
 
-// Accessibility & Display Modes Controller
+// Accessibility toolbar: dyslexia-friendly font toggle
 function initAccessibilityToolbar() {
     const topBar = document.querySelector('body > div.bg-slate-900');
     const topBarContent = topBar ? topBar.firstElementChild : null;
@@ -245,11 +245,6 @@ function initAccessibilityToolbar() {
         toolbarSlot.className = 'flex items-center gap-2';
         topBarContent.appendChild(toolbarSlot);
     }
-
-    // Remove preferences from the previous multi-mode toolbar.
-    localStorage.removeItem('mode_dark');
-    localStorage.removeItem('mode_bw');
-    document.body.classList.remove('dark-mode', 'bw-mode');
 
     if (localStorage.getItem('mode_dyslexic') === 'true') document.body.classList.add('dyslexic-mode');
 

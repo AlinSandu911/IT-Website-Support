@@ -3,8 +3,8 @@
 
 body {
     font-family: 'Space Grotesk', system-ui, sans-serif;
-    color: #1e293b;
-    background-color: #f8fafc;
+    color: #e5f4e9;
+    background-color: #080b09;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -83,156 +83,10 @@ body {
 }
 
 /* ==========================================================================
-   THEME MODES & ACCESSIBILITY MODES
+   ACCESSIBILITY MODES
    ========================================================================== */
 
-/* 1. DARK MODE */
-body.dark-mode {
-    background-color: #0f172a !important;
-    color: #f1f5f9 !important;
-}
-body.dark-mode header,
-body.dark-mode .bg-white {
-    background-color: #1e293b !important;
-    color: #f8fafc !important;
-    border-color: #334155 !important;
-}
-body.dark-mode .bg-slate-900 {
-    background-color: #020617 !important;
-    color: #f8fafc !important;
-}
-body.dark-mode .bg-slate-50 {
-    background-color: #172033 !important;
-    border-color: #334155 !important;
-}
-body.dark-mode .bg-slate-100 {
-    background-color: #1e293b !important;
-    border-color: #334155 !important;
-}
-body.dark-mode .text-slate-900,
-body.dark-mode .text-slate-800,
-body.dark-mode .text-slate-700 {
-    color: #f8fafc !important;
-}
-body.dark-mode .text-slate-600,
-body.dark-mode .text-slate-500,
-body.dark-mode .text-slate-400,
-body.dark-mode .text-slate-300 {
-    color: #cbd5e1 !important;
-}
-body.dark-mode input,
-body.dark-mode select,
-body.dark-mode textarea {
-    background-color: #0f172a !important;
-    color: #ffffff !important;
-    border-color: #475569 !important;
-}
-body.dark-mode input::placeholder,
-body.dark-mode textarea::placeholder {
-    color: #94a3b8 !important;
-}
-body.dark-mode .nav-link {
-    color: #cbd5e1 !important;
-}
-body.dark-mode .nav-link:hover {
-    color: #60a5fa !important;
-}
-body.dark-mode .ui-modes-box {
-    background-color: #0f172a !important;
-    border-color: #475569 !important;
-}
-body.dark-mode .ui-mode-button:hover,
-body.dark-mode .ui-mode-button:focus-visible {
-    background-color: #334155 !important;
-}
-
-/* 2. BLACK & WHITE / HIGH CONTRAST MODE */
-body.bw-mode {
-    background-color: #111111 !important;
-    color: #ffffff !important;
-    filter: grayscale(100%);
-}
-body.bw-mode header,
-body.bw-mode .bg-white {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-body.bw-mode .bg-slate-50,
-body.bw-mode .bg-slate-100 {
-    background-color: #eeeeee !important;
-    color: #000000 !important;
-    border-color: #000000 !important;
-}
-body.bw-mode .bg-slate-900 {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-}
-body.bw-mode .text-slate-900,
-body.bw-mode .text-slate-800,
-body.bw-mode .text-slate-700,
-body.bw-mode .text-slate-600,
-body.bw-mode .text-slate-500,
-body.bw-mode .text-slate-400,
-body.bw-mode .text-slate-300 {
-    color: #000000 !important;
-}
-body.bw-mode .bg-slate-900 .text-slate-900,
-body.bw-mode .bg-slate-900 .text-slate-800,
-body.bw-mode .bg-slate-900 .text-slate-700,
-body.bw-mode .bg-slate-900 .text-slate-600,
-body.bw-mode .bg-slate-900 .text-slate-500,
-body.bw-mode .bg-slate-900 .text-slate-400,
-body.bw-mode .bg-slate-900 .text-slate-300,
-body.bw-mode .bg-slate-900 .text-blue-400,
-body.bw-mode .bg-slate-900 .text-blue-300 {
-    color: #ffffff !important;
-}
-body.bw-mode a,
-body.bw-mode button {
-    color: #000000 !important;
-    border-color: #000000 !important;
-    text-decoration: underline !important;
-}
-body.bw-mode .bg-slate-900 a,
-body.bw-mode .bg-slate-900 button,
-body.bw-mode .bg-slate-900 .ui-mode-button {
-    color: #ffffff !important;
-    border-color: #ffffff !important;
-}
-body.bw-mode .bg-blue-600,
-body.bw-mode .bg-blue-800,
-body.bw-mode .bg-green-600,
-body.bw-mode .bg-emerald-600 {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    border: 2px solid #ffffff !important;
-}
-body.bw-mode input,
-body.bw-mode select,
-body.bw-mode textarea {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border: 2px solid #ffffff !important;
-}
-body.bw-mode input::placeholder,
-body.bw-mode textarea::placeholder {
-    color: #333333 !important;
-}
-body.bw-mode .ui-modes-box {
-    background-color: #000000 !important;
-    border-color: #ffffff !important;
-}
-body.bw-mode .ui-modes-box > span {
-    color: #ffffff !important;
-}
-body.bw-mode .ui-mode-button:hover,
-body.bw-mode .ui-mode-button:focus-visible {
-    background-color: #333333 !important;
-}
-
-/* 3. DYSLEXIA-FRIENDLY FONT MODE */
+/* DYSLEXIA-FRIENDLY FONT MODE */
 body.dyslexic-mode,
 body.dyslexic-mode * {
     font-family: 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif !important;
@@ -244,10 +98,6 @@ body.dyslexic-mode * {
 /* ===========================================================================
     ANTONIO'S BLACK & GREEN SYSTEM
     =========================================================================== */
-body {
-    background-color: #080b09 !important;
-    color: #e5f4e9 !important;
-}
 
 body .bg-white {
     background-color: #101612 !important;
