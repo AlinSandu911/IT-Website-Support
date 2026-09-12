@@ -1,0 +1,8 @@
+node_modules/
+.env
+database.db
+database.db-shm
+database.db-wal
+server-test.out.log
+server-test.err.log
+*.log

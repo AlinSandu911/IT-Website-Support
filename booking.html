@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Service | Antonio's IT Services</title>
+    <meta name="description" content="Request a convenient computer repair or IT support appointment in Cheltenham and Gloucestershire.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/custom.css">
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen">
+    <div class="bg-slate-900 text-slate-300 text-sm py-2 px-4"><div class="max-w-5xl mx-auto flex justify-between items-center"><span class="text-green-300">Cheltenham & Gloucestershire</span><div id="ui-modes-slot"></div></div></div>
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40"><div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between"><a href="index.html" class="text-xl font-extrabold text-slate-900">Antonio's IT</a><a href="contact.html" class="text-green-600 font-bold">Contact</a></div></header>
+    <main class="flex-grow py-14"><div class="max-w-3xl mx-auto px-4 sm:px-6"><span class="text-green-400 text-sm font-bold uppercase tracking-wider">Appointment request</span><h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 mt-2">Book a time that works</h1><p class="text-slate-600 mt-3 mb-8">Choose a preferred slot. Antonio will confirm availability by phone or email.</p>
+        <form id="booking-form" class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm grid sm:grid-cols-2 gap-5">
+            <div><label for="booking-name" class="field-label">Your name *</label><input id="booking-name" name="name" required class="field-input" placeholder="Your name"></div>
+            <div><label for="booking-phone" class="field-label">Phone number *</label><input id="booking-phone" name="phone" type="tel" required class="field-input" placeholder="07391 580090"></div>
+            <div class="sm:col-span-2"><label for="booking-email" class="field-label">Email address *</label><input id="booking-email" name="email" type="email" required class="field-input" placeholder="you@example.com"></div>
+            <div class="sm:col-span-2"><label for="booking-service" class="field-label">Service required *</label><select id="booking-service" name="service" required class="field-input"><option value="">Choose a service</option><option>Hardware diagnostics</option><option>OS installation or repair</option><option>Virus and malware removal</option><option>Custom PC build or upgrade</option><option>SSD upgrade and data migration</option><option>Home or office Wi-Fi setup</option><option>General IT support</option></select></div>
+            <div><label for="booking-date" class="field-label">Preferred date *</label><input id="booking-date" name="preferredDate" type="date" required class="field-input"></div>
+            <div><label for="booking-time" class="field-label">Preferred time *</label><select id="booking-time" name="preferredTime" required class="field-input"><option value="">Choose a time</option><option>Morning (8:00-12:00)</option><option>Afternoon (12:00-17:00)</option><option>Evening (17:00-20:00)</option></select></div>
+            <div class="sm:col-span-2"><label for="booking-location" class="field-label">Location *</label><select id="booking-location" name="location" required class="field-input"><option value="Cheltenham drop-off">Cheltenham drop-off</option><option value="Home visit - Gloucestershire">Home visit - Gloucestershire</option><option value="Remote support">Remote support</option></select></div>
+            <div class="sm:col-span-2"><label for="booking-notes" class="field-label">Anything I should know?</label><textarea id="booking-notes" name="notes" rows="4" class="field-input" placeholder="Tell me about the device or issue."></textarea></div>
+            <div class="sm:col-span-2"><button type="submit" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl">Request appointment</button><p id="booking-status" class="text-sm text-slate-500 mt-3 text-center" role="status"></p></div>
+        </form>
+    </div></main>
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">© 2026 Antonio's IT Services · <a href="privacy.html" class="hover:text-white">Privacy</a> · <a href="terms.html" class="hover:text-white">Terms</a></footer>
+    <script src="js/main.js"></script><script src="js/booking.js"></script>
+</body>
+</html>

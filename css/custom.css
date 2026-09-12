@@ -1,0 +1,469 @@
+/* Custom CSS extensions for Antonio's IT & Technical Repair Services */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    color: #1e293b;
+    background-color: #f8fafc;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Prevent floating mobile bar from overlapping footer content */
+@media (max-width: 639px) {
+    body {
+        padding-bottom: 4rem;
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Active navigation link styling */
+.nav-link.active {
+    color: #2563eb !important;
+    font-weight: 600;
+    border-bottom: 2px solid #2563eb;
+}
+
+/* Card hover glow */
+.hover-glow {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-glow:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(37, 99, 235, 0.2);
+}
+
+.ui-modes-box {
+    white-space: nowrap;
+}
+
+.ui-mode-button {
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0.3rem;
+    border: 0;
+    border-radius: 0.45rem;
+    background: transparent;
+    color: #f8fafc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.ui-mode-button:hover,
+.ui-mode-button:focus-visible {
+    background: #334155;
+    outline: 2px solid #60a5fa;
+    outline-offset: 1px;
+}
+
+@media (max-width: 480px) {
+    .ui-modes-box > span {
+        display: none;
+    }
+
+    .ui-mode-button {
+        min-width: 1.8rem;
+        min-height: 1.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* ==========================================================================
+   THEME MODES & ACCESSIBILITY MODES
+   ========================================================================== */
+
+/* 1. DARK MODE */
+body.dark-mode {
+    background-color: #0f172a !important;
+    color: #f1f5f9 !important;
+}
+body.dark-mode header,
+body.dark-mode .bg-white {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .bg-slate-900 {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+}
+body.dark-mode .bg-slate-50 {
+    background-color: #172033 !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .bg-slate-100 {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+body.dark-mode .text-slate-900,
+body.dark-mode .text-slate-800,
+body.dark-mode .text-slate-700 {
+    color: #f8fafc !important;
+}
+body.dark-mode .text-slate-600,
+body.dark-mode .text-slate-500,
+body.dark-mode .text-slate-400,
+body.dark-mode .text-slate-300 {
+    color: #cbd5e1 !important;
+}
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #475569 !important;
+}
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+    color: #94a3b8 !important;
+}
+body.dark-mode .nav-link {
+    color: #cbd5e1 !important;
+}
+body.dark-mode .nav-link:hover {
+    color: #60a5fa !important;
+}
+body.dark-mode .ui-modes-box {
+    background-color: #0f172a !important;
+    border-color: #475569 !important;
+}
+body.dark-mode .ui-mode-button:hover,
+body.dark-mode .ui-mode-button:focus-visible {
+    background-color: #334155 !important;
+}
+
+/* 2. BLACK & WHITE / HIGH CONTRAST MODE */
+body.bw-mode {
+    background-color: #111111 !important;
+    color: #ffffff !important;
+    filter: grayscale(100%);
+}
+body.bw-mode header,
+body.bw-mode .bg-white {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+body.bw-mode .bg-slate-50,
+body.bw-mode .bg-slate-100 {
+    background-color: #eeeeee !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+body.bw-mode .bg-slate-900 {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+}
+body.bw-mode .text-slate-900,
+body.bw-mode .text-slate-800,
+body.bw-mode .text-slate-700,
+body.bw-mode .text-slate-600,
+body.bw-mode .text-slate-500,
+body.bw-mode .text-slate-400,
+body.bw-mode .text-slate-300 {
+    color: #000000 !important;
+}
+body.bw-mode .bg-slate-900 .text-slate-900,
+body.bw-mode .bg-slate-900 .text-slate-800,
+body.bw-mode .bg-slate-900 .text-slate-700,
+body.bw-mode .bg-slate-900 .text-slate-600,
+body.bw-mode .bg-slate-900 .text-slate-500,
+body.bw-mode .bg-slate-900 .text-slate-400,
+body.bw-mode .bg-slate-900 .text-slate-300,
+body.bw-mode .bg-slate-900 .text-blue-400,
+body.bw-mode .bg-slate-900 .text-blue-300 {
+    color: #ffffff !important;
+}
+body.bw-mode a,
+body.bw-mode button {
+    color: #000000 !important;
+    border-color: #000000 !important;
+    text-decoration: underline !important;
+}
+body.bw-mode .bg-slate-900 a,
+body.bw-mode .bg-slate-900 button,
+body.bw-mode .bg-slate-900 .ui-mode-button {
+    color: #ffffff !important;
+    border-color: #ffffff !important;
+}
+body.bw-mode .bg-blue-600,
+body.bw-mode .bg-blue-800,
+body.bw-mode .bg-green-600,
+body.bw-mode .bg-emerald-600 {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+}
+body.bw-mode input,
+body.bw-mode select,
+body.bw-mode textarea {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #ffffff !important;
+}
+body.bw-mode input::placeholder,
+body.bw-mode textarea::placeholder {
+    color: #333333 !important;
+}
+body.bw-mode .ui-modes-box {
+    background-color: #000000 !important;
+    border-color: #ffffff !important;
+}
+body.bw-mode .ui-modes-box > span {
+    color: #ffffff !important;
+}
+body.bw-mode .ui-mode-button:hover,
+body.bw-mode .ui-mode-button:focus-visible {
+    background-color: #333333 !important;
+}
+
+/* 3. DYSLEXIA-FRIENDLY FONT MODE */
+body.dyslexic-mode,
+body.dyslexic-mode * {
+    font-family: 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif !important;
+    letter-spacing: 0.04em !important;
+    word-spacing: 0.08em !important;
+    line-height: 1.7 !important;
+}
+
+/* ===========================================================================
+    ANTONIO'S BLACK & GREEN SYSTEM
+    =========================================================================== */
+body {
+    background-color: #080b09 !important;
+    color: #e5f4e9 !important;
+}
+
+body .bg-white {
+    background-color: #101612 !important;
+    color: #e5f4e9 !important;
+    border-color: #26382b !important;
+}
+
+body .bg-slate-50,
+body .bg-slate-100 {
+    background-color: #0d120f !important;
+    color: #e5f4e9 !important;
+    border-color: #26382b !important;
+}
+
+body .bg-slate-900 {
+    background-color: #050705 !important;
+    color: #f4fff6 !important;
+}
+
+body .bg-slate-800 {
+    background-color: #101b13 !important;
+}
+
+body .text-slate-900,
+body .text-slate-800,
+body .text-slate-700 {
+    color: #effff2 !important;
+}
+
+body .text-slate-600,
+body .text-slate-500,
+body .text-slate-400,
+body .text-slate-300 {
+    color: #b7cdbb !important;
+}
+
+body .text-blue-900,
+body .text-blue-800,
+body .text-blue-700,
+body .text-blue-600,
+body .text-blue-500,
+body .text-blue-400,
+body .text-blue-300,
+body .text-cyan-400 {
+    color: #63e68a !important;
+}
+
+body .bg-blue-900,
+body .bg-blue-800,
+body .bg-blue-700,
+body .bg-blue-600,
+body .bg-blue-500 {
+    background-color: #159447 !important;
+    color: #031108 !important;
+}
+
+body .hover\:bg-blue-900:hover,
+body .hover\:bg-blue-700:hover,
+body .hover\:bg-blue-500:hover,
+body .hover\:bg-blue-600:hover {
+    background-color: #22c55e !important;
+    color: #031108 !important;
+}
+
+body .border-blue-800,
+body .border-blue-700,
+body .border-blue-600,
+body .border-blue-400\/30 {
+    border-color: #2fbd65 !important;
+}
+
+body .bg-green-600,
+body .bg-emerald-600 {
+    background-color: #159447 !important;
+    color: #031108 !important;
+}
+
+body .hover\:bg-green-500:hover,
+body .hover\:bg-emerald-500:hover {
+    background-color: #22c55e !important;
+}
+
+body input,
+body select,
+body textarea {
+    background-color: #0b100d !important;
+    color: #f1fff4 !important;
+    border-color: #315439 !important;
+}
+
+body input::placeholder,
+body textarea::placeholder {
+    color: #8eaa94 !important;
+}
+
+body .nav-link {
+    color: #d7eadb !important;
+}
+
+body .nav-link:hover,
+body .nav-link.active {
+    color: #63e68a !important;
+}
+
+body .nav-link.active {
+    border-color: #22c55e !important;
+}
+
+body .ui-modes-box {
+    background: #0a120c !important;
+    border-color: #2fbd65 !important;
+}
+
+body .ui-mode-button {
+    color: #b9f7c7 !important;
+}
+
+body .ui-mode-button:hover,
+body .ui-mode-button:focus-visible {
+    background: #123d20 !important;
+    outline-color: #63e68a !important;
+}
+
+body .hover-glow:hover {
+    box-shadow: 0 14px 30px -12px rgba(34, 197, 94, 0.35);
+}
+
+body .bg-white.text-blue-700,
+body a.bg-white {
+    background-color: #159447 !important;
+    color: #031108 !important;
+}
+
+body .bg-gradient-to-r {
+    background-image: linear-gradient(110deg, #0d6b32, #22c55e) !important;
+}
+
+/* Hero contact card: the opacity utility needs its own dark surface rule. */
+body .bg-white\/95 {
+    background-color: #101b13 !important;
+    color: #effff2 !important;
+    border-color: #2fbd65 !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35) !important;
+}
+
+body .bg-blue-50,
+body .bg-blue-100,
+body .bg-emerald-50,
+body .bg-emerald-100 {
+    background-color: #122b1a !important;
+    border-color: #285b37 !important;
+}
+
+body .hover\:bg-blue-100:hover,
+body .hover\:bg-slate-100:hover,
+body .hover\:bg-emerald-100:hover {
+    background-color: #194426 !important;
+}
+
+body .bg-white\/95 .text-slate-900,
+body .bg-white\/95 .text-slate-800,
+body .bg-white\/95 .text-slate-700 {
+    color: #effff2 !important;
+}
+
+body .bg-white\/95 .text-slate-600,
+body .bg-white\/95 .text-slate-500 {
+    color: #b7cdbb !important;
+}
+
+body .rounded-2xl,
+body .rounded-3xl {
+    border-radius: 1rem !important;
+}
+
+body button,
+body a[class*="bg-"] {
+    transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+body button:hover,
+body a[class*="bg-"]:hover {
+    transform: translateY(-1px);
+}
+
+body .shadow-xl,
+body .shadow-2xl {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28) !important;
+}
+
+body h1,
+body h2,
+body h3,
+body h4 {
+    letter-spacing: -0.02em;
+}
+
+.field-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: #d7eadb;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.field-input {
+    width: 100%;
+    border: 1px solid #315439;
+    border-radius: 0.75rem;
+    background: #0b100d;
+    color: #f1fff4;
+    padding: 0.8rem 0.9rem;
+    outline: none;
+}
+
+.field-input:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
