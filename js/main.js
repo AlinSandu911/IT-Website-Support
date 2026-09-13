@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg> Sending Request to Antonio...
+                </svg> Sending request...
             `;
 
             try {
@@ -117,7 +117,7 @@ async function deliverQuote(formData) {
             });
             const result = await response.json();
             if (response.ok && result.emailSent) {
-                return { sent: true, message: 'Request sent to Antonio successfully.' };
+                return { sent: true, message: 'Request sent successfully.' };
             }
         } catch (error) {
             console.warn('Backend quote delivery unavailable:', error);
@@ -142,7 +142,7 @@ async function deliverQuote(formData) {
         });
         const result = await response.json();
         if (response.ok && result.success) {
-            return { sent: true, message: 'Request sent to Antonio successfully.' };
+            return { sent: true, message: 'Request sent successfully.' };
         }
     } catch (error) {
         console.warn('Web3Forms delivery unavailable:', error);
@@ -166,7 +166,7 @@ async function deliverQuote(formData) {
         });
         const result = await response.json();
         if (response.ok && result.success !== false) {
-            return { sent: true, message: 'Request submitted to Antonio successfully. Check your inbox for any activation email.' };
+            return { sent: true, message: 'Request submitted successfully. Check your inbox for any activation email.' };
         }
     } catch (error) {
         console.warn('FormSubmit delivery unavailable:', error);
@@ -199,7 +199,7 @@ function renderMinimalAbout() {
             <div class="grid lg:grid-cols-5 gap-12 items-start">
                 <div class="lg:col-span-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-blue-600">A little introduction</span>
-                    <h2 class="text-4xl sm:text-5xl font-extrabold text-slate-900 mt-2">Hi, I'm Antonio.</h2>
+                    <h2 class="text-4xl sm:text-5xl font-extrabold text-slate-900 mt-2">Hi, we're Coast Turtle's IT Land.</h2>
                     <p class="text-xl text-slate-600 leading-relaxed mt-6">I'm 24, passionate about computers, and building a local IT service that feels personal, practical, and easy to trust.</p>
                     <p class="text-slate-600 leading-relaxed mt-4">Alongside my three-year Computer Science degree, I have 1.5 years of experience as a Service Desk Engineer. That means I am used to listening carefully, finding the real cause of a problem, and explaining the solution without unnecessary jargon.</p>
                     <p class="text-slate-600 leading-relaxed mt-4">Outside of technology, I enjoy cars and a good hot chocolate. Those interests keep me curious, patient, and hands-on, which is exactly how I approach a repair or a new setup.</p>

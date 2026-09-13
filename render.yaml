@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: antonios-it-services
+    name: coast-turtles-it-land
     runtime: node
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: npm install --include=dev
+    startCommand: node server.js
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
@@ -19,6 +19,6 @@ services:
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/database.db
     disk:
-      name: antonios-it-data
+      name: coast-turtles-it-data
       mountPath: /opt/render/project/src/data
       sizeGB: 1

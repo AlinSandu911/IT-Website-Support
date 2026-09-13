@@ -2,6 +2,7 @@
 // Run with: npm install && node server.js
 
 require('dotenv').config();
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -10,6 +11,12 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const databasePath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+const databaseDir = path.dirname(databasePath);
+
+if (!fs.existsSync(databaseDir)) {
+    fs.mkdirSync(databaseDir, { recursive: true });
+}
 
 // Middleware
 app.use(cors());
@@ -17,12 +24,11 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
 // 1. Initialize SQLite Database
-const databasePath = process.env.DATABASE_PATH || './database.db';
 const db = new sqlite3.Database(databasePath, (err) => {
     if (err) {
         console.error('Error connecting to SQLite Database:', err.message);
     } else {
-        console.log('Connected to SQLite Database (database.db)');
+        console.log(`Connected to SQLite Database (${databasePath})`);
     }
 });
 
@@ -123,9 +129,9 @@ app.post('/api/quotes', (req, res) => {
 
         console.log(`New quote saved to database with ID: ${this.lastID}`);
 
-        // Send Email Notification to Antonio
+        // Send email notification to the site owner
         const mailOptions = {
-            from: '"Coast Turtle's IT Land Website" <antoniosandu21@gmail.com>',
+            from: '"Coast Turtle\'s IT Land Website" <antoniosandu21@gmail.com>',
             to: 'antoniosandu21@gmail.com',
             subject: `New Repair Request from ${name} (${phone})`,
             html: `
@@ -300,6 +306,6 @@ app.patch('/api/bookings/:id', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Coast Turtle's IT Land Server running on http://localhost:${PORT}`);
 });

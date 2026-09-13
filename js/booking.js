@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || 'Booking failed');
-            status.textContent = result.emailSent ? 'Request sent. Antonio will confirm your appointment shortly.' : 'Request saved. Please also call 07391580090 if you need urgent confirmation.';
+            status.textContent = result.emailSent ? 'Request sent. The team will confirm your appointment shortly.' : 'Request saved. Please also call 07391580090 if you need urgent confirmation.';
             status.className = 'text-sm text-green-500 mt-3 text-center';
             form.reset();
         } catch (error) {
