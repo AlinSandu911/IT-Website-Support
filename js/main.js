@@ -1,4 +1,4 @@
-// Main JavaScript for Antonio's IT & Technical Repair Services
+// Main JavaScript for Coast Turtle's IT Land
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Mobile menu toggle
@@ -131,7 +131,7 @@ async function deliverQuote(formData) {
             body: JSON.stringify({
                 access_key: '55dfd813-f9ec-45ec-90d5-b9f1d05aa857',
                 subject: `New IT Repair Request from ${formData.name} (${formData.phone})`,
-                from_name: "Antonio's IT Website",
+                from_name: "Coast Turtle's IT Land Website",
                 name: formData.name,
                 phone: formData.phone,
                 email: formData.email,

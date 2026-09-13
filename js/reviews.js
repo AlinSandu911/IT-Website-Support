@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.textContent = 'Sending review...';
         formData.append('access_key', '55dfd813-f9ec-45ec-90d5-b9f1d05aa857');
         formData.append('subject', `New customer review from ${review.name}`);
-        formData.append('from_name', "Antonio's IT Reviews");
+        formData.append('from_name', "Coast Turtle's IT Land Reviews");
         formData.append('to_email', 'antoniosandu21@gmail.com');
         formData.append('approval_status', 'Pending approval');
 

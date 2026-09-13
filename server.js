@@ -1,4 +1,4 @@
-// Node.js Express & SQLite Database Server for Antonio's IT Services
+// Node.js Express & SQLite Database Server for Coast Turtle's IT Land
 // Run with: npm install && node server.js
 
 require('dotenv').config();
@@ -125,7 +125,7 @@ app.post('/api/quotes', (req, res) => {
 
         // Send Email Notification to Antonio
         const mailOptions = {
-            from: '"Antonio IT Website" <antoniosandu21@gmail.com>',
+            from: '"Coast Turtle's IT Land Website" <antoniosandu21@gmail.com>',
             to: 'antoniosandu21@gmail.com',
             subject: `New Repair Request from ${name} (${phone})`,
             html: `
@@ -253,7 +253,7 @@ app.post('/api/bookings', (req, res) => {
 
         const notifyOwner = process.env.EMAIL_PASS && process.env.EMAIL_PASS !== 'YOUR_GMAIL_APP_PASSWORD'
             ? new Promise(resolve => transporter.sendMail({
-                from: `"Antonio's IT Website" <${process.env.EMAIL_USER || 'antoniosandu21@gmail.com'}>`,
+                from: `"Coast Turtle's IT Land Website" <${process.env.EMAIL_USER || 'antoniosandu21@gmail.com'}>`,
                 to: 'antoniosandu21@gmail.com',
                 subject: mailData.subject,
                 text: `Name: ${name}\nPhone: ${phone}\nEmail: ${email}\nService: ${service}\nPreferred: ${preferredDate} at ${preferredTime}\nLocation: ${location}\nNotes: ${notes || 'None'}`
@@ -301,5 +301,5 @@ app.patch('/api/bookings/:id', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Antonio's IT Services Server running on http://localhost:${PORT}`);
+    console.log(`Coast Turtle's IT Land Server running on http://localhost:${PORT}`);
 });

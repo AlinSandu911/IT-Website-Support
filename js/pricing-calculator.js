@@ -1,4 +1,4 @@
-// Interactive Price Estimator for Antonio's IT Services
+// Interactive Price Estimator for Coast Turtle's IT Land
 
 const SERVICE_ITEMS = [
     { id: 'diag', name: 'Hardware Diagnostics & Troubleshooting', price: 25 },
