@@ -123,33 +123,54 @@ db.run(`
     )
 `);
 
-// 2. Transporter for sending Emails to antoniosandu21@gmail.com
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER || 'antoniosandu21@gmail.com',
-        pass: process.env.EMAIL_PASS || 'YOUR_GMAIL_APP_PASSWORD' // Replace with Gmail App Password if running Node server
-    }
-});
+// 2. Email notifications to the owner.
+// With a 16-character Gmail app password in EMAIL_PASS, mail is sent through Gmail.
+// Otherwise it goes through FormSubmit, which only delivers once its one-time activation email is confirmed.
+const OWNER_EMAIL = 'antoniosandu21@gmail.com';
+const gmailUser = (process.env.EMAIL_USER || OWNER_EMAIL).trim();
+const gmailPassword = (process.env.EMAIL_PASS || '').replace(/\s/g, '');
+const emailMode = /^[a-zA-Z0-9]{16}$/.test(gmailPassword) ? 'gmail' : 'formsubmit';
+const transporter = emailMode === 'gmail'
+    ? nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: gmailUser, pass: gmailPassword },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 20000
+    })
+    : null;
+console.log(`Email notifications: ${emailMode}`);
 
-async function sendViaFormSubmit(mailData) {
-    const response = await fetch('https://formsubmit.co/ajax/antoniosandu21@gmail.com', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-            _subject: mailData.subject,
-            _template: 'table',
-            _captcha: false,
-            name: mailData.name,
-            phone: mailData.phone,
-            email: mailData.email,
-            services: mailData.services || 'Not specified',
-            estimate: mailData.estimate || 'Not specified',
-            message: mailData.message
-        })
-    });
-    const result = await response.json().catch(() => ({}));
-    return response.ok && result.success !== false;
+// fields: [label, value] pairs shown in the email. Resolves to { sent, error }.
+async function notifyOwner(subject, fields) {
+    try {
+        if (emailMode === 'gmail') {
+            const text = fields.map(([label, value]) => `${label}: ${value || 'Not specified'}`).join('\n');
+            const html = `<h2>${escapeHtml(subject)}</h2>` + fields
+                .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value || 'Not specified')}</p>`)
+                .join('');
+            await transporter.sendMail({ from: `"Coast Turtle's IT Land Website" <${gmailUser}>`, to: OWNER_EMAIL, subject, text, html });
+            return { sent: true };
+        }
+
+        const response = await fetch(`https://formsubmit.co/ajax/${OWNER_EMAIL}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                _subject: subject,
+                _template: 'table',
+                _captcha: 'false',
+                ...Object.fromEntries(fields.map(([label, value]) => [label, value || 'Not specified']))
+            }),
+            signal: AbortSignal.timeout(15000)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && String(result.success) === 'true') return { sent: true };
+        throw new Error(result.message || `FormSubmit responded with HTTP ${response.status}`);
+    } catch (error) {
+        console.error(`Email notification failed (${emailMode}):`, error.message);
+        return { sent: false, error: error.message };
+    }
 }
 
 // 3. API Endpoint to receive Quote Requests
@@ -168,71 +189,32 @@ app.post('/api/quotes', limitFormSubmissions, (req, res) => {
             return res.status(500).json({ error: 'Failed to save to database' });
         }
 
-        console.log(`New quote saved to database with ID: ${this.lastID}`);
-
-        // Send email notification to the site owner
-        const mailOptions = {
-            from: '"Coast Turtle\'s IT Land Website" <antoniosandu21@gmail.com>',
-            to: 'antoniosandu21@gmail.com',
-            subject: `New Repair Request from ${name} (${phone})`,
-            html: `
-                <h2>New Service Request Received</h2>
-                <p><strong>Customer Name:</strong> ${escapeHtml(name)}</p>
-                <p><strong>Phone Number:</strong> <a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></p>
-                <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
-                <p><strong>Services Required:</strong> ${escapeHtml(services || 'N/A')}</p>
-                <p><strong>Calculated Estimate:</strong> ${escapeHtml(estimate || 'N/A')}</p>
-                <p><strong>Message / Description:</strong></p>
-                <p style="background:#f1f5f9; padding:12px; border-radius:8px;">${escapeHtml(message)}</p>
-            `
-        };
-
-        const emailPassword = (process.env.EMAIL_PASS || '').replace(/\s/g, '');
-        const hasGmailAppPassword = /^[a-zA-Z0-9]{16}$/.test(emailPassword);
-        if (!hasGmailAppPassword) {
-            sendViaFormSubmit({
-                subject: `New IT Repair Request from ${name} (${phone})`,
-                name,
-                phone,
-                email,
-                services,
-                estimate,
-                message
-            }).then(emailSent => {
-                res.status(emailSent ? 201 : 202).json({
-                    success: true,
-                    emailSent,
-                    quoteId: this.lastID,
-                    message: emailSent
-                        ? 'Quote recorded and email submitted'
-                        : 'Quote recorded, but email delivery failed'
-                });
-            }).catch(error => {
-                console.error('FormSubmit delivery failed:', error.message);
-                res.status(202).json({ success: true, emailSent: false, quoteId: this.lastID, message: 'Quote recorded, but email delivery failed' });
+        const quoteId = this.lastID;
+        notifyOwner(`New repair request from ${name} (${phone})`, [
+            ['Name', name], ['Phone', phone], ['Email', email],
+            ['Services', services], ['Estimate', estimate], ['Message', message]
+        ]).then(({ sent }) => {
+            res.status(sent ? 201 : 202).json({
+                success: true,
+                emailSent: sent,
+                quoteId,
+                message: sent ? 'Quote recorded and email sent' : 'Quote recorded, but email delivery failed'
             });
-            return;
-        }
-
-        transporter.sendMail(mailOptions, (mailErr, info) => {
-            if (mailErr) {
-                console.error('Quote email failed:', mailErr.message);
-                return res.status(202).json({
-                    success: true,
-                    emailSent: false,
-                    quoteId: this.lastID,
-                    message: 'Quote recorded, but email delivery failed'
-                });
-            } else {
-                console.log('Email sent:', info.response);
-                return res.status(201).json({
-                    success: true,
-                    emailSent: true,
-                    quoteId: this.lastID,
-                    message: 'Quote recorded and email dispatched'
-                });
-            }
         });
+    });
+});
+
+// Admin-only: send a test notification and report exactly what happened
+app.post('/api/admin/test-email', async (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    const result = await notifyOwner('Test email from your website', [
+        ['Sent at', new Date().toISOString()], ['Delivery method', emailMode]
+    ]);
+    res.json({
+        ...result,
+        mode: emailMode,
+        emailUser: emailMode === 'gmail' ? gmailUser : null,
+        emailPassLength: gmailPassword.length
     });
 });
 
@@ -305,29 +287,11 @@ app.post('/api/bookings', limitFormSubmissions, (req, res) => {
         if (err) return res.status(500).json({ error: 'Failed to save appointment request' });
 
         const bookingId = this.lastID;
-        const mailData = {
-            subject: `New booking request from ${name}`,
-            name,
-            phone,
-            email,
-            services: service,
-            estimate: `${preferredDate} at ${preferredTime} | ${location}`,
-            message: notes || 'No additional notes provided'
-        };
-
-        const notifyOwner = process.env.EMAIL_PASS && process.env.EMAIL_PASS !== 'YOUR_GMAIL_APP_PASSWORD'
-            ? new Promise(resolve => transporter.sendMail({
-                from: `"Coast Turtle's IT Land Website" <${process.env.EMAIL_USER || 'antoniosandu21@gmail.com'}>`,
-                to: 'antoniosandu21@gmail.com',
-                subject: mailData.subject,
-                text: `Name: ${name}\nPhone: ${phone}\nEmail: ${email}\nService: ${service}\nPreferred: ${preferredDate} at ${preferredTime}\nLocation: ${location}\nNotes: ${notes || 'None'}`
-            }, error => resolve(!error)))
-            : sendViaFormSubmit(mailData);
-
-        notifyOwner.then(emailSent => {
-            res.status(201).json({ success: true, bookingId, emailSent, message: emailSent ? 'Booking request sent' : 'Booking saved; email delivery needs configuration' });
-        }).catch(() => {
-            res.status(201).json({ success: true, bookingId, emailSent: false, message: 'Booking saved; email delivery needs configuration' });
+        notifyOwner(`New booking request from ${name}`, [
+            ['Name', name], ['Phone', phone], ['Email', email], ['Service', service],
+            ['Preferred', `${preferredDate} at ${preferredTime}`], ['Location', location], ['Notes', notes]
+        ]).then(({ sent }) => {
+            res.status(201).json({ success: true, bookingId, emailSent: sent, message: sent ? 'Booking request sent' : 'Booking saved; email delivery failed' });
         });
     });
 });
