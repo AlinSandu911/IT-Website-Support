@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filter = document.getElementById('booking-filter');
     let loadedBookings = [];
     let loadedQuotes = [];
+    let loadedReviews = [];
 
     button.addEventListener('click', async () => {
         const key = keyInput.value;
@@ -13,16 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
         status.textContent = 'Loading...';
         try {
             const headers = { 'x-admin-key': key };
-            const [bookingsResponse, quotesResponse] = await Promise.all([
+            const [bookingsResponse, quotesResponse, reviewsResponse] = await Promise.all([
                 fetch('/api/bookings', { headers }),
-                fetch('/api/quotes', { headers })
+                fetch('/api/quotes', { headers }),
+                fetch('/api/admin/reviews', { headers })
             ]);
-            if (!bookingsResponse.ok || !quotesResponse.ok) throw new Error('Invalid admin key or unavailable API');
+            if (!bookingsResponse.ok || !quotesResponse.ok || !reviewsResponse.ok) throw new Error('Invalid admin key or unavailable API');
             loadedBookings = (await bookingsResponse.json()).bookings || [];
             loadedQuotes = (await quotesResponse.json()).quotes || [];
+            loadedReviews = (await reviewsResponse.json()).reviews || [];
             renderBookings();
+            renderReviews();
             document.getElementById('quotes-list').innerHTML = loadedQuotes.length ? loadedQuotes.map(item => card(`${item.name} · ${item.services || 'General support'}`, item.message, item.phone, item.email, item.estimate)).join('') : empty('No quotes yet.');
-            status.textContent = `Loaded ${loadedBookings.length} bookings and ${loadedQuotes.length} quotes.`;
+            const pending = loadedReviews.filter(item => !item.published).length;
+            status.textContent = `Loaded ${loadedBookings.length} bookings, ${loadedQuotes.length} quotes and ${loadedReviews.length} reviews (${pending} awaiting approval).`;
         } catch (error) {
             status.textContent = error.message;
         } finally {
@@ -54,7 +59,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(`/api/bookings/${event.target.dataset.bookingId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-admin-key': keyInput.value }, body: JSON.stringify({ status: event.target.value }) });
         if (!response.ok) status.textContent = 'Could not update booking status.';
     }
+
+    function renderReviews() {
+        document.getElementById('reviews-admin-list').innerHTML = loadedReviews.length ? loadedReviews.map(item => reviewCard(item)).join('') : empty('No reviews yet.');
+        document.querySelectorAll('[data-review-id]').forEach(toggle => toggle.addEventListener('click', toggleReview));
+    }
+
+    async function toggleReview(event) {
+        const review = loadedReviews.find(item => String(item.id) === event.target.dataset.reviewId);
+        if (!review) return;
+        const published = !review.published;
+        const response = await fetch(`/api/reviews/${review.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-admin-key': keyInput.value }, body: JSON.stringify({ published }) });
+        if (!response.ok) {
+            status.textContent = 'Could not update review.';
+            return;
+        }
+        review.published = published ? 1 : 0;
+        renderReviews();
+    }
 });
+
+function reviewCard(item) {
+    const label = item.published ? 'Published' : 'Awaiting approval';
+    const action = item.published ? 'Hide' : 'Publish';
+    return `<article class="bg-white border border-slate-200 rounded-xl p-4"><div class="flex justify-between gap-3"><h3 class="font-bold text-slate-900">${escapeValue(item.name)} · ${escapeValue(item.rating)}/5</h3><span class="text-xs text-slate-500">${label}</span></div><p class="text-sm text-slate-600 mt-2">${escapeValue(item.review)}</p><p class="text-xs text-slate-500 mt-2">${escapeValue(item.created_at)}</p><button data-review-id="${escapeValue(item.id)}" class="mt-3 border border-green-600 text-green-600 font-bold px-4 py-2 rounded-xl">${action}</button></article>`;
+}
 
 function card(title, detail, phone, email, extra) {
     return `<article class="bg-white border border-slate-200 rounded-xl p-4"><h3 class="font-bold text-slate-900">${escapeValue(title)}</h3><p class="text-sm text-slate-600 mt-2">${escapeValue(detail || '')}</p><p class="text-sm text-green-600 mt-2">${escapeValue(phone)} · ${escapeValue(email)}</p><p class="text-xs text-slate-500 mt-2">${escapeValue(extra || '')}</p></article>`;

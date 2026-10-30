@@ -21,7 +21,25 @@ if (!fs.existsSync(databaseDir)) {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Only website files are public. Everything else in this folder (database.db, server.js,
+// package.json, render.yaml, DEPLOYMENT.md...) must never be downloadable.
+const PUBLIC_FILE = /^\/(?:[\w-]+\.html|robots\.txt|sitemap\.xml|favicon\.ico|(?:css|js)\/[\w.-]+\.(?:css|js)|(?:images|img)\/[\w.-]+\.(?:png|jpe?g|webp|gif|svg|ico))?$/i;
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || PUBLIC_FILE.test(req.path)) return next();
+    res.sendStatus(404);
+});
 app.use(express.static(path.join(__dirname)));
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[character]));
+}
+
+function isAdmin(req) {
+    return Boolean(process.env.ADMIN_API_KEY) && req.get('x-admin-key') === process.env.ADMIN_API_KEY;
+}
 
 // 1. Initialize SQLite Database
 const db = new sqlite3.Database(databasePath, (err) => {
@@ -53,7 +71,7 @@ db.run(`
         rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
         review TEXT NOT NULL,
         photos TEXT,
-        published INTEGER NOT NULL DEFAULT 1,
+        published INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
 `);
@@ -136,13 +154,13 @@ app.post('/api/quotes', (req, res) => {
             subject: `New Repair Request from ${name} (${phone})`,
             html: `
                 <h2>New Service Request Received</h2>
-                <p><strong>Customer Name:</strong> ${name}</p>
-                <p><strong>Phone Number:</strong> <a href="tel:${phone}">${phone}</a></p>
-                <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-                <p><strong>Services Required:</strong> ${services || 'N/A'}</p>
-                <p><strong>Calculated Estimate:</strong> ${estimate || 'N/A'}</p>
+                <p><strong>Customer Name:</strong> ${escapeHtml(name)}</p>
+                <p><strong>Phone Number:</strong> <a href="tel:${escapeHtml(phone)}">${escapeHtml(phone)}</a></p>
+                <p><strong>Email:</strong> <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></p>
+                <p><strong>Services Required:</strong> ${escapeHtml(services || 'N/A')}</p>
+                <p><strong>Calculated Estimate:</strong> ${escapeHtml(estimate || 'N/A')}</p>
                 <p><strong>Message / Description:</strong></p>
-                <p style="background:#f1f5f9; padding:12px; border-radius:8px;">${message}</p>
+                <p style="background:#f1f5f9; padding:12px; border-radius:8px;">${escapeHtml(message)}</p>
             `
         };
 
@@ -210,17 +228,19 @@ app.get('/api/quotes', (req, res) => {
     });
 });
 
-// 5. Customer reviews are published immediately and mirrored on the Home page
+// 5. Customer reviews are held for approval in admin.html before appearing on the site.
+// Photos are not accepted here; customers can send them by email instead.
 app.post('/api/reviews', (req, res) => {
-    const { name, rating, review, photos = [] } = req.body;
+    const { name, rating, review } = req.body;
     const numericRating = Number(rating);
 
-    if (!name || !review || !Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+    if (typeof name !== 'string' || typeof review !== 'string' || !name.trim() || !review.trim()
+        || !Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
         return res.status(400).json({ error: 'Name, review, and a rating from 1 to 5 are required' });
     }
 
-    const sql = `INSERT INTO customer_reviews (name, rating, review, photos) VALUES (?, ?, ?, ?)`;
-    db.run(sql, [name, numericRating, review, JSON.stringify(Array.isArray(photos) ? photos : [])], function (err) {
+    const sql = `INSERT INTO customer_reviews (name, rating, review, photos, published) VALUES (?, ?, ?, '[]', 0)`;
+    db.run(sql, [name.trim().slice(0, 100), numericRating, review.trim().slice(0, 700)], function (err) {
         if (err) {
             console.error('SQLite review insert error:', err.message);
             return res.status(500).json({ error: 'Failed to save review' });
@@ -230,9 +250,27 @@ app.post('/api/reviews', (req, res) => {
 });
 
 app.get('/api/reviews', (req, res) => {
-    db.all(`SELECT id, name, rating, review, photos, created_at FROM customer_reviews WHERE published = 1 ORDER BY created_at DESC`, [], (err, rows) => {
+    db.all(`SELECT id, name, rating, review, created_at FROM customer_reviews WHERE published = 1 ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ reviews: rows.map(row => ({ ...row, photos: JSON.parse(row.photos || '[]') })) });
+        res.json({ reviews: rows });
+    });
+});
+
+app.get('/api/admin/reviews', (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    db.all(`SELECT id, name, rating, review, published, created_at FROM customer_reviews ORDER BY published ASC, created_at DESC`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ reviews: rows });
+    });
+});
+
+app.patch('/api/reviews/:id', (req, res) => {
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (typeof req.body.published !== 'boolean') return res.status(400).json({ error: 'published must be true or false' });
+    db.run(`UPDATE customer_reviews SET published = ? WHERE id = ?`, [req.body.published ? 1 : 0, req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!this.changes) return res.status(404).json({ error: 'Review not found' });
+        res.json({ success: true });
     });
 });
 
