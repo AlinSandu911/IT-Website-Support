@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || 'Booking failed');
             status.textContent = result.emailSent ? "Request sent. I'll confirm your appointment shortly." : 'Request saved. Please also call 07391580090 if you need urgent confirmation.';
-            status.className = 'text-sm text-green-500 mt-3 text-center';
+            status.className = 'text-sm text-accent-light mt-3 text-center';
             form.reset();
         } catch (error) {
             status.textContent = 'Online booking is unavailable. Please call 07391580090 or email antoniosandu21@gmail.com.';

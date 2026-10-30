@@ -134,9 +134,9 @@ function initAccessibilityToolbar() {
     if (readSetting('mode_dyslexic') === 'true') document.body.classList.add('dyslexic-mode');
 
     const widget = document.createElement('div');
-    widget.className = 'ui-modes-box bg-slate-800/80 backdrop-blur rounded-lg border border-slate-700 flex items-center gap-1.5 p-1.5';
+    widget.className = 'ui-modes-box bg-sunken rounded-lg border border-accent-border flex items-center gap-1.5 p-1.5';
     widget.innerHTML = `
-        <span class="text-[10px] font-bold text-green-300 uppercase tracking-wider px-1">Readability</span>
+        <span class="text-[10px] font-bold text-accent-light uppercase tracking-wider px-1">Readability</span>
         <button type="button" title="Toggle dyslexia-friendly font" aria-label="Dyslexia-friendly font" class="ui-mode-button">Aa</button>`;
     slot.appendChild(widget);
 
@@ -164,9 +164,9 @@ function showToast(message) {
     const toast = document.createElement('div');
     toast.id = 'toast-notification';
     toast.setAttribute('role', 'status');
-    toast.className = 'fixed bottom-20 sm:bottom-5 right-5 left-5 sm:left-auto max-w-sm bg-slate-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 border border-slate-700';
+    toast.className = 'fixed bottom-20 sm:bottom-5 right-5 left-5 sm:left-auto max-w-sm bg-night text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 border border-line';
     toast.innerHTML = `
-        <svg class="w-6 h-6 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="w-6 h-6 text-accent-light flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm font-medium"></span>`;

@@ -12,10 +12,10 @@ function renderReviews(reviews) {
 
     empty.classList.toggle('hidden', reviews.length > 0);
     list.innerHTML = reviews.map(review => `
-            <article class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <article class="bg-surface border border-line rounded-2xl p-6 shadow-sm">
                 <div class="text-amber-500 tracking-wider" aria-label="${escapeHtml(review.rating)} out of 5 stars">${starText(review.rating)}</div>
-                <p class="text-slate-700 mt-4 leading-relaxed">${escapeHtml(review.review)}</p>
-                <div class="border-t border-slate-100 mt-5 pt-4 text-sm font-semibold text-slate-900">${escapeHtml(review.name)}</div>
+                <p class="text-ink mt-4 leading-relaxed">${escapeHtml(review.review)}</p>
+                <div class="border-t border-line mt-5 pt-4 text-sm font-semibold text-ink">${escapeHtml(review.name)}</div>
             </article>`).join('');
 }
 
@@ -25,9 +25,9 @@ function renderHomeReviews(reviews) {
 
     document.getElementById('home-reviews')?.classList.remove('hidden');
     list.innerHTML = reviews.slice(0, 6).map(review => `
-            <article class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col justify-between">
-                <div><div class="text-amber-500 tracking-wider mb-4" aria-label="${escapeHtml(review.rating)} out of 5 stars">${starText(review.rating)}</div><p class="text-slate-700 text-sm italic">"${escapeHtml(review.review)}"</p></div>
-                <div class="text-sm font-bold text-slate-900 mt-6">${escapeHtml(review.name)}</div>
+            <article class="bg-sunken p-6 rounded-2xl border border-line flex flex-col justify-between">
+                <div><div class="text-amber-500 tracking-wider mb-4" aria-label="${escapeHtml(review.rating)} out of 5 stars">${starText(review.rating)}</div><p class="text-ink text-sm italic">"${escapeHtml(review.review)}"</p></div>
+                <div class="text-sm font-bold text-ink mt-6">${escapeHtml(review.name)}</div>
             </article>`).join('');
 }
 
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [...imageInput.files].slice(0, 6).forEach(file => {
                 if (!file.type.startsWith('image/')) return;
                 const image = document.createElement('img');
-                image.className = 'w-full aspect-square object-cover rounded-lg border border-slate-200';
+                image.className = 'w-full aspect-square object-cover rounded-lg border border-line';
                 image.alt = 'Selected review photo preview';
                 image.src = URL.createObjectURL(file);
                 preview.appendChild(image);

@@ -14,6 +14,16 @@
 
 The Node server serves the website, saves quotes and reviews to `database.db`, and exposes the API. The database file is created automatically.
 
+## Styling (Tailwind CSS)
+
+The site's stylesheet `css/site.css` is generated from `src/styles.css` and `tailwind.config.js`, which holds the black & green colour theme (`surface`, `ink`, `muted`, `accent`, ...). After adding or changing classes in any page or script, rebuild it and commit the result:
+
+```powershell
+npm run build:css
+```
+
+`css/site.css` is committed to the repository, so the host doesn't need a build step.
+
 Do not test quote delivery by double-clicking `contact.html`; that uses a `file://` URL and cannot reach the Node API. Use `http://localhost:3000/contact.html` instead.
 
 ## Email setup

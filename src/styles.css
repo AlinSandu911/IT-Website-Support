@@ -1,0 +1,111 @@
+/* Source stylesheet for Coast Turtle's IT Land.
+   Edit this file (and tailwind.config.js), then run `npm run build:css` to regenerate css/site.css. */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-page font-sans;
+        color: #e5f4e9;
+    }
+
+    h1, h2, h3, h4 {
+        letter-spacing: -0.02em;
+    }
+
+    input, select, textarea {
+        @apply bg-field text-ink border-line-strong;
+    }
+
+    input::placeholder, textarea::placeholder {
+        color: #8eaa94;
+    }
+
+    /* Keep the fixed mobile action bar from covering the footer */
+    @media (max-width: 639px) {
+        body {
+            padding-bottom: 4rem;
+        }
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        @apply bg-page;
+    }
+    ::-webkit-scrollbar-thumb {
+        @apply bg-line rounded;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-accent-border;
+    }
+}
+
+@layer components {
+    .nav-link.active {
+        @apply text-accent-light font-semibold border-b-2 border-accent-bright;
+    }
+
+    .hover-glow {
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hover-glow:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px -12px rgba(34, 197, 94, 0.35);
+    }
+
+    /* Subtle lift on buttons and button-style links */
+    button, a[class*="bg-"] {
+        transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+    }
+    button:hover, a[class*="bg-"]:hover {
+        transform: translateY(-1px);
+    }
+
+    .field-label {
+        @apply block mb-1.5 text-sm font-bold text-ink;
+    }
+
+    .field-input {
+        @apply w-full rounded-xl border border-line-strong bg-field text-ink px-3.5 py-3 outline-none;
+    }
+    .field-input:focus {
+        @apply border-accent-bright;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    /* Readability toolbar in the top bar */
+    .ui-modes-box {
+        white-space: nowrap;
+    }
+    .ui-mode-button {
+        @apply min-w-8 min-h-8 p-1 rounded-md bg-transparent text-accent-light text-sm leading-none cursor-pointer;
+    }
+    .ui-mode-button:hover,
+    .ui-mode-button:focus-visible {
+        @apply bg-accent-soft-hover;
+        outline: 2px solid theme('colors.accent.light');
+        outline-offset: 1px;
+    }
+    @media (max-width: 480px) {
+        .ui-modes-box > span {
+            display: none;
+        }
+        .ui-mode-button {
+            @apply min-w-7 min-h-7 text-xs;
+        }
+    }
+}
+
+/* Dyslexia-friendly font mode. !important is deliberate: it must win over every font utility. */
+body.dyslexic-mode,
+body.dyslexic-mode * {
+    font-family: 'Atkinson Hyperlegible', 'Trebuchet MS', sans-serif !important;
+    letter-spacing: 0.04em !important;
+    word-spacing: 0.08em !important;
+    line-height: 1.7 !important;
+}

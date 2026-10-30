@@ -82,19 +82,19 @@ document.addEventListener('DOMContentLoaded', () => {
 function reviewCard(item) {
     const label = item.published ? 'Published' : 'Awaiting approval';
     const action = item.published ? 'Hide' : 'Publish';
-    return `<article class="bg-white border border-slate-200 rounded-xl p-4"><div class="flex justify-between gap-3"><h3 class="font-bold text-slate-900">${escapeValue(item.name)} · ${escapeValue(item.rating)}/5</h3><span class="text-xs text-slate-500">${label}</span></div><p class="text-sm text-slate-600 mt-2">${escapeValue(item.review)}</p><p class="text-xs text-slate-500 mt-2">${escapeValue(item.created_at)}</p><button data-review-id="${escapeValue(item.id)}" class="mt-3 border border-green-600 text-green-600 font-bold px-4 py-2 rounded-xl">${action}</button></article>`;
+    return `<article class="bg-surface border border-line rounded-xl p-4"><div class="flex justify-between gap-3"><h3 class="font-bold text-ink">${escapeValue(item.name)} · ${escapeValue(item.rating)}/5</h3><span class="text-xs text-muted">${label}</span></div><p class="text-sm text-muted mt-2">${escapeValue(item.review)}</p><p class="text-xs text-muted mt-2">${escapeValue(item.created_at)}</p><button data-review-id="${escapeValue(item.id)}" class="mt-3 border border-accent-border text-accent-light font-bold px-4 py-2 rounded-xl">${action}</button></article>`;
 }
 
 function card(title, detail, phone, email, extra) {
-    return `<article class="bg-white border border-slate-200 rounded-xl p-4"><h3 class="font-bold text-slate-900">${escapeValue(title)}</h3><p class="text-sm text-slate-600 mt-2">${escapeValue(detail || '')}</p><p class="text-sm text-green-600 mt-2">${escapeValue(phone)} · ${escapeValue(email)}</p><p class="text-xs text-slate-500 mt-2">${escapeValue(extra || '')}</p></article>`;
+    return `<article class="bg-surface border border-line rounded-xl p-4"><h3 class="font-bold text-ink">${escapeValue(title)}</h3><p class="text-sm text-muted mt-2">${escapeValue(detail || '')}</p><p class="text-sm text-accent-light mt-2">${escapeValue(phone)} · ${escapeValue(email)}</p><p class="text-xs text-muted mt-2">${escapeValue(extra || '')}</p></article>`;
 }
 
 function bookingCard(item) {
-    return `<article class="bg-white border border-slate-200 rounded-xl p-4"><h3 class="font-bold text-slate-900">${escapeValue(item.name)} · ${escapeValue(item.service)}</h3><p class="text-sm text-slate-600 mt-2">${escapeValue(item.preferred_date)} · ${escapeValue(item.preferred_time)} · ${escapeValue(item.location)}</p><p class="text-sm text-green-600 mt-2">${escapeValue(item.phone)} · ${escapeValue(item.email)}</p><select data-booking-id="${item.id}" class="field-input mt-3"><option ${item.status === 'new' ? 'selected' : ''} value="new">New</option><option ${item.status === 'confirmed' ? 'selected' : ''} value="confirmed">Confirmed</option><option ${item.status === 'completed' ? 'selected' : ''} value="completed">Completed</option><option ${item.status === 'cancelled' ? 'selected' : ''} value="cancelled">Cancelled</option></select></article>`;
+    return `<article class="bg-surface border border-line rounded-xl p-4"><h3 class="font-bold text-ink">${escapeValue(item.name)} · ${escapeValue(item.service)}</h3><p class="text-sm text-muted mt-2">${escapeValue(item.preferred_date)} · ${escapeValue(item.preferred_time)} · ${escapeValue(item.location)}</p><p class="text-sm text-accent-light mt-2">${escapeValue(item.phone)} · ${escapeValue(item.email)}</p><select data-booking-id="${item.id}" class="field-input mt-3"><option ${item.status === 'new' ? 'selected' : ''} value="new">New</option><option ${item.status === 'confirmed' ? 'selected' : ''} value="confirmed">Confirmed</option><option ${item.status === 'completed' ? 'selected' : ''} value="completed">Completed</option><option ${item.status === 'cancelled' ? 'selected' : ''} value="cancelled">Cancelled</option></select></article>`;
 }
 
 function empty(message) {
-    return `<p class="text-slate-500 text-sm">${message}</p>`;
+    return `<p class="text-muted text-sm">${message}</p>`;
 }
 
 function escapeValue(value) {
