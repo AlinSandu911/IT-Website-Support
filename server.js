@@ -4,7 +4,6 @@
 require('dotenv').config();
 const fs = require('fs');
 const express = require('express');
-const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const nodemailer = require('nodemailer');
 const path = require('path');
@@ -18,8 +17,9 @@ if (!fs.existsSync(databaseDir)) {
     fs.mkdirSync(databaseDir, { recursive: true });
 }
 
-// Middleware
-app.use(cors());
+// Middleware. The site and API share one origin, so no CORS headers are sent:
+// other websites can't submit forms here from a visitor's browser.
+app.set('trust proxy', 1); // Render sits behind a proxy; needed for the real visitor IP
 app.use(express.json());
 
 // Only website files are public. Everything else in this folder (database.db, server.js,
@@ -40,6 +40,29 @@ function escapeHtml(value) {
 function isAdmin(req) {
     return Boolean(process.env.ADMIN_API_KEY) && req.get('x-admin-key') === process.env.ADMIN_API_KEY;
 }
+
+// Basic spam protection: each visitor can send a limited number of forms per window
+const FORM_LIMIT = 10;
+const FORM_WINDOW_MS = 15 * 60 * 1000;
+const formSubmissions = new Map();
+
+function limitFormSubmissions(req, res, next) {
+    const now = Date.now();
+    const recent = (formSubmissions.get(req.ip) || []).filter(time => now - time < FORM_WINDOW_MS);
+    if (recent.length >= FORM_LIMIT) {
+        return res.status(429).json({ error: 'Too many requests. Please try again later or call 07391580090.' });
+    }
+    recent.push(now);
+    formSubmissions.set(req.ip, recent);
+    next();
+}
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, times] of formSubmissions) {
+        if (times.every(time => now - time >= FORM_WINDOW_MS)) formSubmissions.delete(ip);
+    }
+}, FORM_WINDOW_MS).unref();
 
 // 1. Initialize SQLite Database
 const db = new sqlite3.Database(databasePath, (err) => {
@@ -130,7 +153,7 @@ async function sendViaFormSubmit(mailData) {
 }
 
 // 3. API Endpoint to receive Quote Requests
-app.post('/api/quotes', (req, res) => {
+app.post('/api/quotes', limitFormSubmissions, (req, res) => {
     const { name, phone, email, services, estimate, message } = req.body;
 
     if (!name || !phone || !email || !message) {
@@ -215,10 +238,7 @@ app.post('/api/quotes', (req, res) => {
 
 // 4. API Endpoint to retrieve all Quotes from Database (Admin key required)
 app.get('/api/quotes', (req, res) => {
-    const suppliedKey = req.get('x-admin-key');
-    if (!process.env.ADMIN_API_KEY || suppliedKey !== process.env.ADMIN_API_KEY) {
-        return res.status(401).json({ error: 'Admin authentication required' });
-    }
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
 
     db.all(`SELECT * FROM service_quotes ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) {
@@ -230,7 +250,7 @@ app.get('/api/quotes', (req, res) => {
 
 // 5. Customer reviews are held for approval in admin.html before appearing on the site.
 // Photos are not accepted here; customers can send them by email instead.
-app.post('/api/reviews', (req, res) => {
+app.post('/api/reviews', limitFormSubmissions, (req, res) => {
     const { name, rating, review } = req.body;
     const numericRating = Number(rating);
 
@@ -274,7 +294,7 @@ app.patch('/api/reviews/:id', (req, res) => {
     });
 });
 
-app.post('/api/bookings', (req, res) => {
+app.post('/api/bookings', limitFormSubmissions, (req, res) => {
     const { name, phone, email, service, preferredDate, preferredTime, location, notes = '' } = req.body;
     if (!name || !phone || !email || !service || !preferredDate || !preferredTime || !location) {
         return res.status(400).json({ error: 'Name, contact details, service, date, time, and location are required' });
@@ -321,9 +341,7 @@ app.post('/api/analytics', (req, res) => {
 });
 
 app.get('/api/bookings', (req, res) => {
-    if (!process.env.ADMIN_API_KEY || req.get('x-admin-key') !== process.env.ADMIN_API_KEY) {
-        return res.status(401).json({ error: 'Admin authentication required' });
-    }
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
     db.all(`SELECT * FROM appointments ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ bookings: rows });
@@ -331,9 +349,7 @@ app.get('/api/bookings', (req, res) => {
 });
 
 app.patch('/api/bookings/:id', (req, res) => {
-    if (!process.env.ADMIN_API_KEY || req.get('x-admin-key') !== process.env.ADMIN_API_KEY) {
-        return res.status(401).json({ error: 'Admin authentication required' });
-    }
+    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
     const allowedStatuses = ['new', 'confirmed', 'completed', 'cancelled'];
     const { status } = req.body;
     if (!allowedStatuses.includes(status)) return res.status(400).json({ error: 'Invalid booking status' });

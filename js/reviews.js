@@ -23,6 +23,7 @@ function renderHomeReviews(reviews) {
     const list = document.getElementById('home-reviews-list');
     if (!list || !reviews.length) return;
 
+    document.getElementById('home-reviews')?.classList.remove('hidden');
     list.innerHTML = reviews.slice(0, 6).map(review => `
             <article class="bg-slate-50 p-6 rounded-2xl border border-slate-200 flex flex-col justify-between">
                 <div><div class="text-amber-500 tracking-wider mb-4" aria-label="${escapeHtml(review.rating)} out of 5 stars">${starText(review.rating)}</div><p class="text-slate-700 text-sm italic">"${escapeHtml(review.review)}"</p></div>

@@ -5,9 +5,11 @@ const SERVICE_ITEMS = [
     { id: 'os', name: 'OS Reinstallation (Windows 10/11 or Linux + Drivers)', price: 35 },
     { id: 'virus', name: 'Virus, Malware & Spyware Removal', price: 40 },
     { id: 'pcbuild', name: 'Custom PC Assembly & Cable Management', price: 50 },
-    { id: 'ssd', name: 'SSD Upgrade & Full Data Disk Cloning', price: 40 },
+    { id: 'ssd', name: 'SSD Upgrade & Full Data Disk Cloning (+ parts)', price: 40 },
+    { id: 'clean', name: 'Overheating Fix & Deep Cleaning', price: 30 },
+    { id: 'gpu', name: 'GPU or Power Supply Upgrade (+ parts)', price: 30 },
     { id: 'wifi', name: 'Home/Office Wi-Fi & Network Setup', price: 45 },
-    { id: 'backup', name: 'Automated Data Backup Solution Setup', price: 30 }
+    { id: 'backup', name: 'Automated Data Backup Setup', price: 30 }
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -70,6 +72,7 @@ function renderCalculator() {
                     </svg>
                 </button>
             </div>
+            <p id="calc-error" class="hidden text-sm text-red-400 mt-3 text-center" role="alert">Please select at least one service first.</p>
         </div>
     `;
 
@@ -79,6 +82,7 @@ function renderCalculator() {
     const locationSelect = document.getElementById('calc-location');
     const totalDisplay = document.getElementById('calc-total');
     const bookBtn = document.getElementById('book-estimate-btn');
+    const errorMessage = document.getElementById('calc-error');
 
     function updateCalculations() {
         let total = 0;
@@ -96,6 +100,7 @@ function renderCalculator() {
 
         total += speedFee + locationFee;
         totalDisplay.textContent = `£${total}`;
+        if (selectedServices.length) errorMessage.classList.add('hidden');
 
         return { total, selectedServices };
     }
@@ -107,7 +112,7 @@ function renderCalculator() {
     bookBtn.addEventListener('click', () => {
         const { total, selectedServices } = updateCalculations();
         if (selectedServices.length === 0) {
-            alert('Please select at least one service before proceeding to booking.');
+            errorMessage.classList.remove('hidden');
             return;
         }
 

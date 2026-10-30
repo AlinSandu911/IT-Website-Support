@@ -20,14 +20,14 @@ body {
     width: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: #080b09;
 }
 ::-webkit-scrollbar-thumb {
-    background: #94a3b8;
+    background: #26382b;
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+    background: #2fbd65;
 }
 
 /* Active navigation link styling */

@@ -2,7 +2,7 @@
 
 ## Local development
 
-1. Install Node.js 18 or newer.
+1. Install Node.js 22 or newer.
 2. In this folder run:
 
    ```powershell
@@ -39,7 +39,7 @@ Use a Node-compatible host such as Render, Railway, Fly.io, or a VPS. Create a W
 
 - Build command: `npm install`
 - Start command: `npm start`
-- Node version: 18 or newer
+- Node version: 22
 
 Add the variables from `.env` in the host's environment-variable settings. The site and API should then use the same public URL, so `/api/reviews` and `/api/quotes` work without extra frontend configuration.
 
@@ -55,4 +55,9 @@ The lightweight analytics endpoint stores anonymous page paths in SQLite. For fu
 
 ## Review flow
 
-Submitted reviews are emailed to Antonio, saved locally as a browser fallback, and posted to `/api/reviews` when the Node server is available. Published database reviews are loaded into both `reviews.html` and the Home customer-satisfaction row.
+Submitted reviews are saved to the database as unpublished and emailed to Antonio (with any photos) via Web3Forms. They only appear on the site after being published from `admin.html`. Published reviews are shown on `reviews.html`, and the Home page reviews row appears once at least one review is published.
+
+## Security notes
+
+- Only website files (`*.html`, `css/`, `js/`, `images/`) are served publicly; `server.js` blocks everything else, including `database.db`. Put any new public files in those folders.
+- Form endpoints are limited to 10 submissions per visitor per 15 minutes.
