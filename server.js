@@ -37,8 +37,17 @@ function escapeHtml(value) {
     }[character]));
 }
 
+// Spaces around the key are ignored on both sides (easy to pick up when copying)
+const adminKey = (process.env.ADMIN_API_KEY || '').trim();
+
 function isAdmin(req) {
-    return Boolean(process.env.ADMIN_API_KEY) && req.get('x-admin-key') === process.env.ADMIN_API_KEY;
+    return Boolean(adminKey) && (req.get('x-admin-key') || '').trim() === adminKey;
+}
+
+function denyAdmin(res) {
+    return adminKey
+        ? res.status(401).json({ error: 'Admin key not recognised. Check it matches ADMIN_API_KEY in Render > Environment.' })
+        : res.status(503).json({ error: 'ADMIN_API_KEY is not set on the server. Add it in Render > Environment.' });
 }
 
 // Basic spam protection: each visitor can send a limited number of forms per window
@@ -226,7 +235,7 @@ app.post('/api/quotes', limitFormSubmissions, (req, res) => {
 
 // Admin-only: send a test notification and report exactly what happened
 app.post('/api/admin/test-email', async (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
     const result = await notifyOwner('Test email from your website', [
         ['Sent at', new Date().toISOString()], ['Delivery method', emailMode]
     ]);
@@ -240,7 +249,7 @@ app.post('/api/admin/test-email', async (req, res) => {
 
 // 4. API Endpoint to retrieve all Quotes from Database (Admin key required)
 app.get('/api/quotes', (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
 
     db.all(`SELECT * FROM service_quotes ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) {
@@ -279,7 +288,7 @@ app.get('/api/reviews', (req, res) => {
 });
 
 app.get('/api/admin/reviews', (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
     db.all(`SELECT id, name, rating, review, published, created_at FROM customer_reviews ORDER BY published ASC, created_at DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ reviews: rows });
@@ -287,7 +296,7 @@ app.get('/api/admin/reviews', (req, res) => {
 });
 
 app.patch('/api/reviews/:id', (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
     if (typeof req.body.published !== 'boolean') return res.status(400).json({ error: 'published must be true or false' });
     db.run(`UPDATE customer_reviews SET published = ? WHERE id = ?`, [req.body.published ? 1 : 0, req.params.id], function (err) {
         if (err) return res.status(500).json({ error: err.message });
@@ -325,7 +334,7 @@ app.post('/api/analytics', (req, res) => {
 });
 
 app.get('/api/bookings', (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
     db.all(`SELECT * FROM appointments ORDER BY created_at DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ bookings: rows });
@@ -333,7 +342,7 @@ app.get('/api/bookings', (req, res) => {
 });
 
 app.patch('/api/bookings/:id', (req, res) => {
-    if (!isAdmin(req)) return res.status(401).json({ error: 'Admin authentication required' });
+    if (!isAdmin(req)) return denyAdmin(res);
     const allowedStatuses = ['new', 'confirmed', 'completed', 'cancelled'];
     const { status } = req.body;
     if (!allowedStatuses.includes(status)) return res.status(400).json({ error: 'Invalid booking status' });

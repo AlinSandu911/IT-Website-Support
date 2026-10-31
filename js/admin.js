@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch('/api/quotes', { headers }),
                 fetch('/api/admin/reviews', { headers })
             ]);
-            if (!bookingsResponse.ok || !quotesResponse.ok || !reviewsResponse.ok) throw new Error('Invalid admin key or unavailable API');
+            const failed = [bookingsResponse, quotesResponse, reviewsResponse].find(response => !response.ok);
+            if (failed) throw new Error(await apiErrorMessage(failed));
             loadedBookings = (await bookingsResponse.json()).bookings || [];
             loadedQuotes = (await quotesResponse.json()).quotes || [];
             loadedReviews = (await reviewsResponse.json()).reviews || [];
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         status.textContent = 'Sending test email...';
         try {
             const response = await fetch('/api/admin/test-email', { method: 'POST', headers: { 'x-admin-key': key } });
-            if (!response.ok) throw new Error('Invalid admin key or unavailable API');
+            if (!response.ok) throw new Error(await apiErrorMessage(response));
             status.textContent = describeEmailTest(await response.json());
         } catch (error) {
             status.textContent = error.message;
@@ -97,6 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
         renderReviews();
     }
 });
+
+async function apiErrorMessage(response) {
+    const result = await response.json().catch(() => ({}));
+    return result.error || `The server is unavailable (HTTP ${response.status}). If you just changed settings in Render, wait a minute and try again.`;
+}
 
 function describeEmailTest(result) {
     const method = { resend: 'Resend', gmail: `Gmail (${result.emailUser})`, formsubmit: 'FormSubmit' }[result.mode] || result.mode;
