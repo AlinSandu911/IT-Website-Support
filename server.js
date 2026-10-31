@@ -123,13 +123,18 @@ db.run(`
     )
 `);
 
-// 2. Email notifications to the owner.
-// With a 16-character Gmail app password in EMAIL_PASS, mail is sent through Gmail.
-// Otherwise it goes through FormSubmit, which only delivers once its one-time activation email is confirmed.
+// 2. Email notifications to the owner, using the first method that is configured:
+//    - Resend (RESEND_API_KEY): sends over HTTPS, so it works on hosts that block email ports (like Render)
+//    - Gmail (16-character app password in EMAIL_PASS): needs outgoing SMTP, which some hosts block
+//    - FormSubmit: only delivers once its one-time activation email has been confirmed
 const OWNER_EMAIL = 'antoniosandu21@gmail.com';
+const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+const resendFrom = process.env.RESEND_FROM || "Coast Turtle's IT Land <onboarding@resend.dev>";
 const gmailUser = (process.env.EMAIL_USER || OWNER_EMAIL).trim();
 const gmailPassword = (process.env.EMAIL_PASS || '').replace(/\s/g, '');
-const emailMode = /^[a-zA-Z0-9]{16}$/.test(gmailPassword) ? 'gmail' : 'formsubmit';
+const emailMode = resendApiKey ? 'resend'
+    : /^[a-zA-Z0-9]{16}$/.test(gmailPassword) ? 'gmail'
+    : 'formsubmit';
 const transporter = emailMode === 'gmail'
     ? nodemailer.createTransport({
         service: 'gmail',
@@ -141,15 +146,30 @@ const transporter = emailMode === 'gmail'
     : null;
 console.log(`Email notifications: ${emailMode}`);
 
-// fields: [label, value] pairs shown in the email. Resolves to { sent, error }.
-async function notifyOwner(subject, fields) {
+// fields: [label, value] pairs shown in the email. replyTo: the customer's address, so
+// pressing Reply in your inbox answers them directly. Resolves to { sent, error }.
+async function notifyOwner(subject, fields, replyTo) {
+    const text = fields.map(([label, value]) => `${label}: ${value || 'Not specified'}`).join('\n');
+    const html = `<h2>${escapeHtml(subject)}</h2>` + fields
+        .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value || 'Not specified')}</p>`)
+        .join('');
+    const validReplyTo = typeof replyTo === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyTo) ? replyTo : undefined;
+
     try {
+        if (emailMode === 'resend') {
+            const response = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ from: resendFrom, to: [OWNER_EMAIL], subject, text, html, ...(validReplyTo && { reply_to: validReplyTo }) }),
+                signal: AbortSignal.timeout(15000)
+            });
+            if (response.ok) return { sent: true };
+            const result = await response.json().catch(() => ({}));
+            throw new Error(result.message || `Resend responded with HTTP ${response.status}`);
+        }
+
         if (emailMode === 'gmail') {
-            const text = fields.map(([label, value]) => `${label}: ${value || 'Not specified'}`).join('\n');
-            const html = `<h2>${escapeHtml(subject)}</h2>` + fields
-                .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value || 'Not specified')}</p>`)
-                .join('');
-            await transporter.sendMail({ from: `"Coast Turtle's IT Land Website" <${gmailUser}>`, to: OWNER_EMAIL, subject, text, html });
+            await transporter.sendMail({ from: `"Coast Turtle's IT Land Website" <${gmailUser}>`, to: OWNER_EMAIL, replyTo: validReplyTo, subject, text, html });
             return { sent: true };
         }
 
@@ -193,7 +213,7 @@ app.post('/api/quotes', limitFormSubmissions, (req, res) => {
         notifyOwner(`New repair request from ${name} (${phone})`, [
             ['Name', name], ['Phone', phone], ['Email', email],
             ['Services', services], ['Estimate', estimate], ['Message', message]
-        ]).then(({ sent }) => {
+        ], email).then(({ sent }) => {
             res.status(sent ? 201 : 202).json({
                 success: true,
                 emailSent: sent,
@@ -290,7 +310,7 @@ app.post('/api/bookings', limitFormSubmissions, (req, res) => {
         notifyOwner(`New booking request from ${name}`, [
             ['Name', name], ['Phone', phone], ['Email', email], ['Service', service],
             ['Preferred', `${preferredDate} at ${preferredTime}`], ['Location', location], ['Notes', notes]
-        ]).then(({ sent }) => {
+        ], email).then(({ sent }) => {
             res.status(201).json({ success: true, bookingId, emailSent: sent, message: sent ? 'Booking request sent' : 'Booking saved; email delivery failed' });
         });
     });

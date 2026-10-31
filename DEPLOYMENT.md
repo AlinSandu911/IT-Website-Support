@@ -28,10 +28,15 @@ Do not test quote delivery by double-clicking `contact.html`; that uses a `file:
 
 ## Email setup
 
-1. Copy `.env.example` to `.env`.
-2. Create a Google app password for `antoniosandu21@gmail.com`.
-3. Put that app password in `EMAIL_PASS`.
-4. Set a long random value for `ADMIN_API_KEY`.
+New quotes and bookings are emailed to `antoniosandu21@gmail.com`. The server uses the first method that is configured:
+
+1. **Resend (recommended, and required on Render):** sign up at resend.com with `antoniosandu21@gmail.com`, create an API key, and set it as `RESEND_API_KEY`. It sends over HTTPS, so it works on hosts that block email ports. Render blocks outgoing SMTP, which makes Gmail time out there.
+2. **Gmail:** create a Google app password and set `EMAIL_USER` and `EMAIL_PASS`. Works locally, but not on Render.
+3. **FormSubmit:** used when neither is set; only delivers after you confirm its one-time activation email.
+
+Use **Send test email** on `admin.html` to check delivery; it shows the method used and the exact error.
+
+Also set a long random value for `ADMIN_API_KEY`. Copy `.env.example` to `.env` for local development.
 
 The contact form now reports SMTP delivery honestly. If SMTP is unavailable, it opens a prepared email addressed to `antoniosandu21@gmail.com` rather than showing a false success message.
 
