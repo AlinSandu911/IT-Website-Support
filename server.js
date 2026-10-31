@@ -295,6 +295,11 @@ app.patch('/api/reviews/:id', route(async (req, res) => {
     res.json({ success: true });
 }));
 
+// Public health check: is the server up, and which kind of database is it using?
+app.get('/api/health', (req, res) => {
+    res.json({ ok: true, database: tursoUrl ? 'turso' : 'local file' });
+});
+
 // 5. Anonymous page-view counter (page path only)
 app.post('/api/analytics', route(async (req, res) => {
     const pathName = typeof req.body.path === 'string' ? req.body.path.slice(0, 200) : '/';

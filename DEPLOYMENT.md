@@ -60,7 +60,11 @@ Add the variables from `.env` in the host's environment-variable settings. The s
 
 Attach a custom domain in the host dashboard, enable the automatic HTTPS certificate, and set the canonical public URL in your Google Business Profile. Create the Google Business Profile separately and complete address/service-area verification; that step cannot be automated from the website.
 
-## SQLite persistence
+## Database (Turso)
+
+Requests and reviews are stored in a free Turso database when `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are set (Render > Environment). Without them, the server falls back to a local `database.db` file, which is fine for development but is wiped on every Render deploy. `GET /api/health` reports which one is in use.
+
+## SQLite persistence (without Turso)
 
 SQLite is appropriate for a small community service, but the host must provide persistent disk storage. Render requires a paid persistent disk mounted beside the project; Railway requires a persistent volume. Without a volume, `database.db` can be reset during redeploys.
 
