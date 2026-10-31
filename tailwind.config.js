@@ -3,7 +3,7 @@
 //   npm run build:css
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ['./*.html', './js/**/*.js'],
+    content: ['./*.html', './partials/*.html', './js/**/*.js'],
     theme: {
         extend: {
             colors: {

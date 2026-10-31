@@ -139,19 +139,8 @@ async function apiErrorMessage(response) {
 }
 
 function describeEmailTest(result) {
-    const method = { resend: 'Resend', gmail: `Gmail (${result.emailUser})`, formsubmit: 'FormSubmit' }[result.mode] || result.mode;
-    if (result.sent) return `Test email sent via ${method}. Check your inbox (and spam folder).`;
-    let hint = '';
-    if (result.mode === 'gmail' && /timeout|ETIMEDOUT|ECONNREFUSED/i.test(result.error)) {
-        hint = ' The host is blocking email connections; set RESEND_API_KEY on the server to send through Resend instead.';
-    } else if (result.mode === 'resend') {
-        hint = ' Check RESEND_API_KEY on the server, and that the Resend account was created with antoniosandu21@gmail.com.';
-    } else if (result.mode === 'formsubmit' && result.emailPassLength > 0) {
-        hint = ` EMAIL_PASS is set but has ${result.emailPassLength} characters; a Gmail app password has exactly 16 letters, so Gmail isn't being used.`;
-    } else if (result.mode === 'formsubmit') {
-        hint = ' EMAIL_PASS is not set on the server, so FormSubmit is being used instead of Gmail.';
-    }
-    return `Test email failed via ${method}: ${result.error}.${hint}`;
+    if (result.sent) return 'Test email sent. Check your inbox (and spam folder).';
+    return `Test email failed: ${result.error}. Check RESEND_API_KEY in Render > Environment, and that the Resend account uses antoniosandu21@gmail.com.`;
 }
 
 function empty(message) {

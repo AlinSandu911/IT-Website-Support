@@ -5,7 +5,6 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
-const nodemailer = require('nodemailer');
 const { createClient } = require('@libsql/client');
 
 const app = express();
@@ -26,6 +25,26 @@ app.use((req, res, next) => {
     if (req.path.startsWith('/api/') || PUBLIC_FILE.test(req.path)) return next();
     res.sendStatus(404);
 });
+
+// Pages are sent with the shared pieces from partials/ (header, footer, mobile bar) slotted in
+// wherever they contain <!-- include: name -->, so the menu and footer are written only once.
+const INCLUDE = /<!-- include: ([\w-]+) -->/g;
+
+async function renderPage(file) {
+    const html = await fs.promises.readFile(file, 'utf8');
+    const names = [...new Set([...html.matchAll(INCLUDE)].map(match => match[1]))];
+    const partials = Object.fromEntries(await Promise.all(names.map(async name =>
+        [name, (await fs.promises.readFile(path.join(__dirname, 'partials', `${name}.html`), 'utf8')).trimEnd()])));
+    return html.replace(INCLUDE, (match, name) => partials[name]);
+}
+
+app.get(/^\/(?:[\w-]+\.html)?$/, (req, res, next) => {
+    const file = path.join(__dirname, req.path === '/' ? 'index.html' : req.path);
+    renderPage(file)
+        .then(html => res.type('html').send(html))
+        .catch(error => (error.code === 'ENOENT' ? next() : next(error)));
+});
+
 app.use(express.static(path.join(__dirname)));
 
 function escapeHtml(value) {
@@ -56,7 +75,7 @@ function limitFormSubmissions(req, res, next) {
     const now = Date.now();
     const recent = (formSubmissions.get(req.ip) || []).filter(time => now - time < FORM_WINDOW_MS);
     if (recent.length >= FORM_LIMIT) {
-        return res.status(429).json({ error: 'Too many requests. Please try again later or call 07391580090.' });
+        return res.status(429).json({ error: 'Too many requests. Please try again later or call 07391 580090.' });
     }
     recent.push(now);
     formSubmissions.set(req.ip, recent);
@@ -131,27 +150,11 @@ const route = handler => (req, res) => handler(req, res).catch(error => {
     if (!res.headersSent) res.status(500).json({ error: 'Something went wrong on the server' });
 });
 
-// 2. Email notifications to the owner, using the first method that is configured:
-//    - Resend (RESEND_API_KEY): sends over HTTPS, so it works on hosts that block email ports (like Render)
-//    - Gmail (16-character app password in EMAIL_PASS): needs outgoing SMTP, which some hosts block
-//    - FormSubmit: only delivers once its one-time activation email has been confirmed
+// 2. Email notifications to the owner, sent through Resend (RESEND_API_KEY).
+// Resend works over HTTPS, so it isn't affected by Render blocking email ports.
 const OWNER_EMAIL = 'antoniosandu21@gmail.com';
 const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
 const resendFrom = process.env.RESEND_FROM || "Coast Turtle's IT Land <onboarding@resend.dev>";
-const gmailUser = (process.env.EMAIL_USER || OWNER_EMAIL).trim();
-const gmailPassword = (process.env.EMAIL_PASS || '').replace(/\s/g, '');
-const emailMode = resendApiKey ? 'resend'
-    : /^[a-zA-Z0-9]{16}$/.test(gmailPassword) ? 'gmail'
-    : 'formsubmit';
-const transporter = emailMode === 'gmail'
-    ? nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: gmailUser, pass: gmailPassword },
-        connectionTimeout: 15000,
-        greetingTimeout: 15000,
-        socketTimeout: 20000
-    })
-    : null;
 
 // fields: [label, value] pairs shown in the email. replyTo: the customer's address, so
 // pressing Reply in your inbox answers them directly. Resolves to { sent, error }.
@@ -163,39 +166,18 @@ async function notifyOwner(subject, fields, replyTo) {
     const validReplyTo = typeof replyTo === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyTo) ? replyTo : undefined;
 
     try {
-        if (emailMode === 'resend') {
-            const response = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ from: resendFrom, to: [OWNER_EMAIL], subject, text, html, ...(validReplyTo && { reply_to: validReplyTo }) }),
-                signal: AbortSignal.timeout(15000)
-            });
-            if (response.ok) return { sent: true };
-            const result = await response.json().catch(() => ({}));
-            throw new Error(result.message || `Resend responded with HTTP ${response.status}`);
-        }
-
-        if (emailMode === 'gmail') {
-            await transporter.sendMail({ from: `"Coast Turtle's IT Land Website" <${gmailUser}>`, to: OWNER_EMAIL, replyTo: validReplyTo, subject, text, html });
-            return { sent: true };
-        }
-
-        const response = await fetch(`https://formsubmit.co/ajax/${OWNER_EMAIL}`, {
+        if (!resendApiKey) throw new Error('RESEND_API_KEY is not set on the server');
+        const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                _subject: subject,
-                _template: 'table',
-                _captcha: 'false',
-                ...Object.fromEntries(fields.map(([label, value]) => [label, value || 'Not specified']))
-            }),
+            headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: resendFrom, to: [OWNER_EMAIL], subject, text, html, ...(validReplyTo && { reply_to: validReplyTo }) }),
             signal: AbortSignal.timeout(15000)
         });
+        if (response.ok) return { sent: true };
         const result = await response.json().catch(() => ({}));
-        if (response.ok && String(result.success) === 'true') return { sent: true };
-        throw new Error(result.message || `FormSubmit responded with HTTP ${response.status}`);
+        throw new Error(result.message || `Resend responded with HTTP ${response.status}`);
     } catch (error) {
-        console.error(`Email notification failed (${emailMode}):`, error.message);
+        console.error('Email notification failed:', error.message);
         return { sent: false, error: error.message };
     }
 }
@@ -254,15 +236,7 @@ app.patch('/api/requests/:id', route(async (req, res) => {
 // Admin-only: send a test notification and report exactly what happened
 app.post('/api/admin/test-email', route(async (req, res) => {
     if (!isAdmin(req)) return denyAdmin(res);
-    const result = await notifyOwner('Test email from your website', [
-        ['Sent at', new Date().toISOString()], ['Delivery method', emailMode]
-    ]);
-    res.json({
-        ...result,
-        mode: emailMode,
-        emailUser: emailMode === 'gmail' ? gmailUser : null,
-        emailPassLength: gmailPassword.length
-    });
+    res.json(await notifyOwner('Test email from your website', [['Sent at', new Date().toISOString()]]));
 }));
 
 // 4. Customer reviews are held for approval in admin.html before appearing on the site.
@@ -310,7 +284,7 @@ app.post('/api/analytics', route(async (req, res) => {
 setUpDatabase()
     .then(() => {
         console.log(`Database: ${databaseLabel}`);
-        console.log(`Email notifications: ${emailMode}`);
+        console.log(`Email notifications: ${resendApiKey ? 'Resend' : 'off (RESEND_API_KEY not set)'}`);
         app.listen(PORT, '0.0.0.0', () => console.log(`Coast Turtle's IT Land server running on http://localhost:${PORT}`));
     })
     .catch(error => {

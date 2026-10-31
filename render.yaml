@@ -2,25 +2,17 @@ services:
   - type: web
     name: coast-turtles-it-land
     runtime: node
-    buildCommand: npm install --include=dev
+    buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: 22
-      - key: PORT
-        value: 10000
-      - key: RESEND_API_KEY
-        sync: false
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASS
-        sync: false
       - key: ADMIN_API_KEY
         sync: false
-      - key: DATABASE_PATH
-        value: /opt/render/project/src/data/database.db
-    disk:
-      name: coast-turtles-it-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
+      - key: RESEND_API_KEY
+        sync: false
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
