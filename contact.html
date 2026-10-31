@@ -79,7 +79,6 @@
                     <a href="reviews.html" class="nav-link text-ink hover:text-accent-light font-medium py-2 transition-colors">Reviews</a>
                     <a href="portfolio.html" class="nav-link text-ink hover:text-accent-light font-medium py-2 transition-colors">Portfolio</a>
                     <a href="contact.html" class="nav-link text-ink hover:text-accent-light font-medium py-2 transition-colors">Contact</a>
-                    <a href="booking.html" class="nav-link text-ink hover:text-accent-light font-medium py-2 transition-colors">Book a Slot</a>
                 </nav>
 
                 <div class="hidden xl:flex items-center">
@@ -103,7 +102,6 @@
             <a href="reviews.html" class="block px-3 py-2 rounded-md font-medium text-ink hover:bg-raised hover:text-accent-light">Reviews</a>
             <a href="portfolio.html" class="block px-3 py-2 rounded-md font-medium text-ink hover:bg-raised hover:text-accent-light">Portfolio</a>
             <a href="contact.html" class="block px-3 py-2 rounded-md font-medium text-ink hover:bg-raised hover:text-accent-light">Contact</a>
-            <a href="booking.html" class="block px-3 py-2 rounded-md font-medium text-ink hover:bg-raised hover:text-accent-light">Book a Slot</a>
         </div>
     </header>
 
@@ -188,52 +186,91 @@
                         </div>
                     </div>
 
-                    <div class="bg-accent text-on-accent p-6 rounded-2xl border border-accent-border">
-                        <h4 class="font-bold text-lg mb-2">Prefer to Drop Off Your PC?</h4>
-                        <p class="text-sm text-on-accent">Convenient drop-off in Cheltenham is available by appointment. Get in touch to schedule your drop-off time.</p>
-                    </div>
                 </div>
 
-                <!-- Right Form Box -->
+                <!-- Request form: the single way to book a repair or ask for a quote -->
                 <div class="lg:col-span-7">
-                    <div class="bg-surface p-8 rounded-2xl border border-line shadow-sm">
-                        <h2 class="text-2xl font-bold text-ink mb-1">Request Service or Quote</h2>
-                        <p class="text-muted text-sm mb-6">Fill out the details below and I'll get back to you promptly.</p>
+                    <div id="request" class="bg-surface p-8 rounded-2xl border border-line shadow-sm scroll-mt-28">
+                        <h2 class="text-2xl font-bold text-ink mb-1">Request a repair or quote</h2>
+                        <p class="text-muted text-sm mb-6">Tell me what's wrong and, if you like, when suits you. I'll confirm by phone or email.</p>
 
                         <form id="contact-form" class="space-y-5">
+                            <div id="estimate-note" class="hidden bg-accent-soft border border-accent-soft-border rounded-xl p-4 text-sm text-ink" role="status"></div>
+                            <input type="hidden" name="services" id="services-field">
+                            <input type="hidden" name="estimate" id="estimate-field">
+
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label for="contact-name" class="block text-sm font-semibold text-ink mb-1.5">Your Name *</label>
-                                    <input type="text" id="contact-name" name="name" autocomplete="name" required placeholder="John Smith" class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all">
+                                    <label for="contact-name" class="field-label">Your name *</label>
+                                    <input type="text" id="contact-name" name="name" autocomplete="name" required placeholder="John Smith" class="field-input">
                                 </div>
                                 <div>
-                                    <label for="contact-phone" class="block text-sm font-semibold text-ink mb-1.5">Phone Number *</label>
-                                    <input type="tel" id="contact-phone" name="phone" autocomplete="tel" required placeholder="07123 456789" class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all">
+                                    <label for="contact-phone" class="field-label">Phone number *</label>
+                                    <input type="tel" id="contact-phone" name="phone" autocomplete="tel" required placeholder="07123 456789" class="field-input">
                                 </div>
                             </div>
 
                             <div>
-                                <label for="contact-email" class="block text-sm font-semibold text-ink mb-1.5">Email Address *</label>
-                                <input type="email" id="contact-email" name="email" autocomplete="email" required placeholder="name@example.com" class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all">
+                                <label for="contact-email" class="field-label">Email address *</label>
+                                <input type="email" id="contact-email" name="email" autocomplete="email" required placeholder="name@example.com" class="field-input">
                             </div>
 
                             <div>
-                                <label for="services-field" class="block text-sm font-semibold text-ink mb-1.5">Selected Services / Requirements</label>
-                                <input type="text" id="services-field" name="services" placeholder="e.g. OS Reinstall, Virus Removal, Custom PC Build" class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all">
+                                <label for="contact-service" class="field-label">What do you need help with? *</label>
+                                <select id="contact-service" name="service" required class="field-input">
+                                    <option value="">Choose a service</option>
+                                    <option>Not sure yet / general question</option>
+                                    <option>Hardware diagnostics &amp; repair</option>
+                                    <option>Windows or Linux installation</option>
+                                    <option>Virus &amp; malware removal</option>
+                                    <option>SSD upgrade &amp; data migration</option>
+                                    <option>Overheating fix &amp; deep cleaning</option>
+                                    <option>GPU or power supply upgrade</option>
+                                    <option>Custom PC build</option>
+                                    <option>Wi-Fi &amp; network setup</option>
+                                    <option>Data backup setup</option>
+                                    <option>Several services (from the price estimator)</option>
+                                </select>
+                            </div>
+
+                            <fieldset>
+                                <legend class="field-label">Where? *</legend>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    <label class="flex items-center gap-2 bg-field border border-line-strong rounded-xl px-3 py-3 text-sm cursor-pointer has-[:checked]:border-accent-bright">
+                                        <input type="radio" name="location" value="Drop-off in Cheltenham" checked class="accent-accent"> Drop-off (free)
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-field border border-line-strong rounded-xl px-3 py-3 text-sm cursor-pointer has-[:checked]:border-accent-bright">
+                                        <input type="radio" name="location" value="Home visit" class="accent-accent"> Home visit (+£15)
+                                    </label>
+                                    <label class="flex items-center gap-2 bg-field border border-line-strong rounded-xl px-3 py-3 text-sm cursor-pointer has-[:checked]:border-accent-bright">
+                                        <input type="radio" name="location" value="Remote support" class="accent-accent"> Remote support
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="contact-date" class="field-label">Preferred day <span class="font-normal text-muted">(optional)</span></label>
+                                    <input type="date" id="contact-date" name="preferredDate" class="field-input">
+                                </div>
+                                <div>
+                                    <label for="contact-time" class="field-label">Preferred time <span class="font-normal text-muted">(optional)</span></label>
+                                    <select id="contact-time" name="preferredTime" class="field-input">
+                                        <option value="">Any time</option>
+                                        <option>Morning (8:00-12:00)</option>
+                                        <option>Afternoon (12:00-17:00)</option>
+                                        <option>Evening (17:00-20:00)</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div>
-                                <label for="estimate-field" class="block text-sm font-semibold text-ink mb-1.5">Estimated Budget / Calculated Cost</label>
-                                <input type="text" id="estimate-field" name="estimate" placeholder="e.g. £35" class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all">
-                            </div>
-
-                            <div>
-                                <label for="contact-message" class="block text-sm font-semibold text-ink mb-1.5">Describe Your Issue or Request *</label>
-                                <textarea id="contact-message" name="message" rows="4" required placeholder="Please describe the problem with your device or any specific hardware requirements..." class="w-full bg-field border border-line-strong rounded-xl p-3 text-ink focus:bg-field focus:ring-2 focus:ring-accent-bright outline-none transition-all"></textarea>
+                                <label for="contact-message" class="field-label">Describe the problem *</label>
+                                <textarea id="contact-message" name="message" rows="4" required placeholder="What device is it, and what's going wrong?" class="field-input"></textarea>
                             </div>
 
                             <button type="submit" class="w-full bg-accent hover:bg-accent-bright text-on-accent font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-                                <span>Send Service Request</span>
+                                <span>Send request</span>
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                             </button>
                         </form>

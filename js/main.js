@@ -38,12 +38,13 @@ function recordPageView() {
     navigator.sendBeacon('/api/analytics', new Blob([JSON.stringify({ path: window.location.pathname })], { type: 'application/json' }));
 }
 
-// Contact form: the server saves the request (visible in admin.html) and emails it.
+// Request form (Contact page): the server saves the request (visible in admin.html) and emails it.
 // Web3Forms is only used if the server can't be reached; an email draft is the last resort.
 function initContactForm() {
     const form = document.getElementById('contact-form');
     if (!form) return;
 
+    form.elements.preferredDate.min = new Date().toISOString().split('T')[0];
     prefillFromEstimator(form);
 
     form.addEventListener('submit', async event => {
@@ -56,9 +57,10 @@ function initContactForm() {
         submitBtn.textContent = 'Sending request...';
 
         try {
-            if (await deliverQuote(request)) {
+            if (await deliverRequest(request)) {
                 showToast("Thanks! Your request has been sent and I'll be in touch shortly.");
                 form.reset();
+                document.getElementById('estimate-note').classList.add('hidden');
             } else {
                 openEmailDraft(request);
                 showToast('Online sending is unavailable, so your email app has been opened with the request ready to send.');
@@ -70,19 +72,26 @@ function initContactForm() {
     });
 }
 
-// Fill in the services and total when arriving from the pricing estimator
+// Arriving from the pricing estimator: carry the chosen services and total into the request
 function prefillFromEstimator(form) {
     const params = new URLSearchParams(window.location.search);
     const services = params.get('services');
     const estimate = params.get('estimate');
-    if (services) form.elements.services.value = services;
-    if (estimate) form.elements.estimate.value = `£${estimate}`;
+    if (!services) return;
+
+    form.elements.services.value = services;
+    form.elements.estimate.value = estimate ? `£${estimate}` : '';
+    form.elements.service.value = 'Several services (from the price estimator)';
+
+    const note = document.getElementById('estimate-note');
+    note.textContent = `From the price estimator: ${services}${estimate ? ` (estimated total £${estimate})` : ''}`;
+    note.classList.remove('hidden');
 }
 
-async function deliverQuote(request) {
+async function deliverRequest(request) {
     if (window.location.protocol !== 'file:') {
         try {
-            const response = await fetch('/api/quotes', {
+            const response = await fetch('/api/requests', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(request)
@@ -118,8 +127,10 @@ function openEmailDraft(request) {
         `Name: ${request.name}`,
         `Phone: ${request.phone}`,
         `Email: ${request.email}`,
-        `Services: ${request.services || 'Not specified'}`,
+        `Service: ${request.service}${request.services ? ` (${request.services})` : ''}`,
         `Estimate: ${request.estimate || 'Not specified'}`,
+        `Where: ${request.location}`,
+        `Preferred: ${[request.preferredDate, request.preferredTime].filter(Boolean).join(' ') || 'Any time'}`,
         '',
         request.message
     ].join('\n'));

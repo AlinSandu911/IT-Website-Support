@@ -1,26 +1,23 @@
-// Node.js Express & SQLite Database Server for Coast Turtle's IT Land
-// Run with: npm install && node server.js
+// Node.js Express server for Coast Turtle's IT Land
+// Run with: npm install && npm start
 
 require('dotenv').config();
 const fs = require('fs');
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
-const nodemailer = require('nodemailer');
 const path = require('path');
+const express = require('express');
+const nodemailer = require('nodemailer');
+const { createClient } = require('@libsql/client');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const databasePath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
-const databaseDir = path.dirname(databasePath);
-
-if (!fs.existsSync(databaseDir)) {
-    fs.mkdirSync(databaseDir, { recursive: true });
-}
 
 // Middleware. The site and API share one origin, so no CORS headers are sent:
 // other websites can't submit forms here from a visitor's browser.
 app.set('trust proxy', 1); // Render sits behind a proxy; needed for the real visitor IP
 app.use(express.json());
+
+// The old booking page now lives on the Contact page
+app.get('/booking.html', (req, res) => res.redirect(301, '/contact.html#request'));
 
 // Only website files are public. Everything else in this folder (database.db, server.js,
 // package.json, render.yaml, DEPLOYMENT.md...) must never be downloadable.
@@ -73,64 +70,66 @@ setInterval(() => {
     }
 }, FORM_WINDOW_MS).unref();
 
-// 1. Initialize SQLite Database
-const db = new sqlite3.Database(databasePath, (err) => {
-    if (err) {
-        console.error('Error connecting to SQLite Database:', err.message);
-    } else {
-        console.log(`Connected to SQLite Database (${databasePath})`);
-    }
+// 1. Database: Turso (online, survives redeploys) when TURSO_DATABASE_URL is set,
+//    otherwise a local SQLite file (fine for development; wiped on each Render deploy).
+const databasePath = process.env.DATABASE_PATH || path.join(__dirname, 'database.db');
+const tursoUrl = (process.env.TURSO_DATABASE_URL || '').trim();
+if (!tursoUrl) fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+const db = createClient(tursoUrl
+    ? { url: tursoUrl, authToken: (process.env.TURSO_AUTH_TOKEN || '').trim() }
+    : { url: `file:${databasePath}` });
+const databaseLabel = tursoUrl ? `Turso (${new URL(tursoUrl.replace(/^libsql:/, 'https:')).hostname})` : `local file (${databasePath})`;
+
+// Runs a query and returns plain row objects
+async function query(sql, args = []) {
+    const result = await db.execute({ sql, args });
+    return result.rows.map(row => Object.fromEntries(result.columns.map((column, i) => [column, row[i]])));
+}
+
+async function run(sql, args = []) {
+    const result = await db.execute({ sql, args });
+    return { id: result.lastInsertRowid === undefined ? null : Number(result.lastInsertRowid), changes: result.rowsAffected };
+}
+
+async function setUpDatabase() {
+    await db.batch([
+        `CREATE TABLE IF NOT EXISTS service_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            email TEXT NOT NULL,
+            service TEXT NOT NULL,
+            location TEXT NOT NULL,
+            preferred_date TEXT,
+            preferred_time TEXT,
+            services TEXT,
+            estimate TEXT,
+            message TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'new',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS customer_reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            review TEXT NOT NULL,
+            photos TEXT,
+            published INTEGER NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS page_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`
+    ], 'write');
+}
+
+// Wraps async route handlers so database errors become a 500 instead of crashing the server
+const route = handler => (req, res) => handler(req, res).catch(error => {
+    console.error(`${req.method} ${req.path} failed:`, error.message);
+    if (!res.headersSent) res.status(500).json({ error: 'Something went wrong on the server' });
 });
-
-// Create Quotes Table if not exists
-db.run(`
-    CREATE TABLE IF NOT EXISTS service_quotes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT NOT NULL,
-        services TEXT,
-        estimate TEXT,
-        message TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`);
-
-db.run(`
-    CREATE TABLE IF NOT EXISTS customer_reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
-        review TEXT NOT NULL,
-        photos TEXT,
-        published INTEGER NOT NULL DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`);
-
-db.run(`
-    CREATE TABLE IF NOT EXISTS appointments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        email TEXT NOT NULL,
-        service TEXT NOT NULL,
-        preferred_date TEXT NOT NULL,
-        preferred_time TEXT NOT NULL,
-        location TEXT NOT NULL,
-        notes TEXT,
-        status TEXT NOT NULL DEFAULT 'new',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`);
-
-db.run(`
-    CREATE TABLE IF NOT EXISTS page_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-`);
 
 // 2. Email notifications to the owner, using the first method that is configured:
 //    - Resend (RESEND_API_KEY): sends over HTTPS, so it works on hosts that block email ports (like Render)
@@ -153,7 +152,6 @@ const transporter = emailMode === 'gmail'
         socketTimeout: 20000
     })
     : null;
-console.log(`Email notifications: ${emailMode}`);
 
 // fields: [label, value] pairs shown in the email. replyTo: the customer's address, so
 // pressing Reply in your inbox answers them directly. Resolves to { sent, error }.
@@ -202,39 +200,59 @@ async function notifyOwner(subject, fields, replyTo) {
     }
 }
 
-// 3. API Endpoint to receive Quote Requests
-app.post('/api/quotes', limitFormSubmissions, (req, res) => {
-    const { name, phone, email, services, estimate, message } = req.body;
+// 3. Repair and quote requests (the Contact page form)
+const REQUEST_STATUSES = ['new', 'confirmed', 'completed', 'cancelled'];
+const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
 
-    if (!name || !phone || !email || !message) {
-        return res.status(400).json({ error: 'Missing required fields' });
+app.post('/api/requests', limitFormSubmissions, route(async (req, res) => {
+    const request = {
+        name: text(req.body.name, 100),
+        phone: text(req.body.phone, 40),
+        email: text(req.body.email, 200),
+        service: text(req.body.service, 100),
+        location: text(req.body.location, 60),
+        preferredDate: text(req.body.preferredDate, 20),
+        preferredTime: text(req.body.preferredTime, 40),
+        services: text(req.body.services, 500),
+        estimate: text(req.body.estimate, 20),
+        message: text(req.body.message, 3000)
+    };
+    if (!request.name || !request.phone || !request.email || !request.service || !request.location || !request.message) {
+        return res.status(400).json({ error: 'Name, phone, email, service, location and a description are required' });
     }
 
-    // Insert into SQLite Database
-    const sql = `INSERT INTO service_quotes (name, phone, email, services, estimate, message) VALUES (?, ?, ?, ?, ?, ?)`;
-    db.run(sql, [name, phone, email, services, estimate, message], function (err) {
-        if (err) {
-            console.error('SQLite insert error:', err.message);
-            return res.status(500).json({ error: 'Failed to save to database' });
-        }
+    const { id } = await run(
+        `INSERT INTO service_requests (name, phone, email, service, location, preferred_date, preferred_time, services, estimate, message)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [request.name, request.phone, request.email, request.service, request.location,
+            request.preferredDate || null, request.preferredTime || null, request.services || null, request.estimate || null, request.message]
+    );
 
-        const quoteId = this.lastID;
-        notifyOwner(`New repair request from ${name} (${phone})`, [
-            ['Name', name], ['Phone', phone], ['Email', email],
-            ['Services', services], ['Estimate', estimate], ['Message', message]
-        ], email).then(({ sent }) => {
-            res.status(sent ? 201 : 202).json({
-                success: true,
-                emailSent: sent,
-                quoteId,
-                message: sent ? 'Quote recorded and email sent' : 'Quote recorded, but email delivery failed'
-            });
-        });
-    });
-});
+    const preferred = [request.preferredDate, request.preferredTime].filter(Boolean).join(', ') || 'Any time';
+    const { sent } = await notifyOwner(`New request from ${request.name}: ${request.service}`, [
+        ['Name', request.name], ['Phone', request.phone], ['Email', request.email],
+        ['Service', request.service], ['From the price estimator', request.services], ['Estimate', request.estimate],
+        ['Where', request.location], ['Preferred', preferred], ['Message', request.message]
+    ], request.email);
+
+    res.status(sent ? 201 : 202).json({ success: true, requestId: id, emailSent: sent });
+}));
+
+app.get('/api/requests', route(async (req, res) => {
+    if (!isAdmin(req)) return denyAdmin(res);
+    res.json({ requests: await query(`SELECT * FROM service_requests ORDER BY created_at DESC, id DESC`) });
+}));
+
+app.patch('/api/requests/:id', route(async (req, res) => {
+    if (!isAdmin(req)) return denyAdmin(res);
+    if (!REQUEST_STATUSES.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
+    const { changes } = await run(`UPDATE service_requests SET status = ? WHERE id = ?`, [req.body.status, Number(req.params.id)]);
+    if (!changes) return res.status(404).json({ error: 'Request not found' });
+    res.json({ success: true });
+}));
 
 // Admin-only: send a test notification and report exactly what happened
-app.post('/api/admin/test-email', async (req, res) => {
+app.post('/api/admin/test-email', route(async (req, res) => {
     if (!isAdmin(req)) return denyAdmin(res);
     const result = await notifyOwner('Test email from your website', [
         ['Sent at', new Date().toISOString()], ['Delivery method', emailMode]
@@ -245,114 +263,52 @@ app.post('/api/admin/test-email', async (req, res) => {
         emailUser: emailMode === 'gmail' ? gmailUser : null,
         emailPassLength: gmailPassword.length
     });
-});
+}));
 
-// 4. API Endpoint to retrieve all Quotes from Database (Admin key required)
-app.get('/api/quotes', (req, res) => {
-    if (!isAdmin(req)) return denyAdmin(res);
-
-    db.all(`SELECT * FROM service_quotes ORDER BY created_at DESC`, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ quotes: rows });
-    });
-});
-
-// 5. Customer reviews are held for approval in admin.html before appearing on the site.
+// 4. Customer reviews are held for approval in admin.html before appearing on the site.
 // Photos are not accepted here; customers can send them by email instead.
-app.post('/api/reviews', limitFormSubmissions, (req, res) => {
-    const { name, rating, review } = req.body;
-    const numericRating = Number(rating);
-
-    if (typeof name !== 'string' || typeof review !== 'string' || !name.trim() || !review.trim()
-        || !Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+app.post('/api/reviews', limitFormSubmissions, route(async (req, res) => {
+    const name = text(req.body.name, 100);
+    const review = text(req.body.review, 700);
+    const rating = Number(req.body.rating);
+    if (!name || !review || !Number.isInteger(rating) || rating < 1 || rating > 5) {
         return res.status(400).json({ error: 'Name, review, and a rating from 1 to 5 are required' });
     }
+    const { id } = await run(`INSERT INTO customer_reviews (name, rating, review, photos, published) VALUES (?, ?, ?, '[]', 0)`, [name, rating, review]);
+    res.status(201).json({ success: true, reviewId: id });
+}));
 
-    const sql = `INSERT INTO customer_reviews (name, rating, review, photos, published) VALUES (?, ?, ?, '[]', 0)`;
-    db.run(sql, [name.trim().slice(0, 100), numericRating, review.trim().slice(0, 700)], function (err) {
-        if (err) {
-            console.error('SQLite review insert error:', err.message);
-            return res.status(500).json({ error: 'Failed to save review' });
-        }
-        res.status(201).json({ success: true, reviewId: this.lastID });
-    });
-});
+app.get('/api/reviews', route(async (req, res) => {
+    res.json({ reviews: await query(`SELECT id, name, rating, review, created_at FROM customer_reviews WHERE published = 1 ORDER BY created_at DESC, id DESC`) });
+}));
 
-app.get('/api/reviews', (req, res) => {
-    db.all(`SELECT id, name, rating, review, created_at FROM customer_reviews WHERE published = 1 ORDER BY created_at DESC`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ reviews: rows });
-    });
-});
-
-app.get('/api/admin/reviews', (req, res) => {
+app.get('/api/admin/reviews', route(async (req, res) => {
     if (!isAdmin(req)) return denyAdmin(res);
-    db.all(`SELECT id, name, rating, review, published, created_at FROM customer_reviews ORDER BY published ASC, created_at DESC`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ reviews: rows });
-    });
-});
+    res.json({ reviews: await query(`SELECT id, name, rating, review, published, created_at FROM customer_reviews ORDER BY published ASC, created_at DESC, id DESC`) });
+}));
 
-app.patch('/api/reviews/:id', (req, res) => {
+app.patch('/api/reviews/:id', route(async (req, res) => {
     if (!isAdmin(req)) return denyAdmin(res);
     if (typeof req.body.published !== 'boolean') return res.status(400).json({ error: 'published must be true or false' });
-    db.run(`UPDATE customer_reviews SET published = ? WHERE id = ?`, [req.body.published ? 1 : 0, req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!this.changes) return res.status(404).json({ error: 'Review not found' });
-        res.json({ success: true });
-    });
-});
+    const { changes } = await run(`UPDATE customer_reviews SET published = ? WHERE id = ?`, [req.body.published ? 1 : 0, Number(req.params.id)]);
+    if (!changes) return res.status(404).json({ error: 'Review not found' });
+    res.json({ success: true });
+}));
 
-app.post('/api/bookings', limitFormSubmissions, (req, res) => {
-    const { name, phone, email, service, preferredDate, preferredTime, location, notes = '' } = req.body;
-    if (!name || !phone || !email || !service || !preferredDate || !preferredTime || !location) {
-        return res.status(400).json({ error: 'Name, contact details, service, date, time, and location are required' });
-    }
-
-    const sql = `INSERT INTO appointments (name, phone, email, service, preferred_date, preferred_time, location, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.run(sql, [name, phone, email, service, preferredDate, preferredTime, location, notes], function (err) {
-        if (err) return res.status(500).json({ error: 'Failed to save appointment request' });
-
-        const bookingId = this.lastID;
-        notifyOwner(`New booking request from ${name}`, [
-            ['Name', name], ['Phone', phone], ['Email', email], ['Service', service],
-            ['Preferred', `${preferredDate} at ${preferredTime}`], ['Location', location], ['Notes', notes]
-        ], email).then(({ sent }) => {
-            res.status(201).json({ success: true, bookingId, emailSent: sent, message: sent ? 'Booking request sent' : 'Booking saved; email delivery failed' });
-        });
-    });
-});
-
-app.post('/api/analytics', (req, res) => {
+// 5. Anonymous page-view counter (page path only)
+app.post('/api/analytics', route(async (req, res) => {
     const pathName = typeof req.body.path === 'string' ? req.body.path.slice(0, 200) : '/';
-    db.run(`INSERT INTO page_events (path) VALUES (?)`, [pathName], err => {
-        if (err) return res.sendStatus(500);
-        res.sendStatus(204);
-    });
-});
+    await run(`INSERT INTO page_events (path) VALUES (?)`, [pathName]);
+    res.sendStatus(204);
+}));
 
-app.get('/api/bookings', (req, res) => {
-    if (!isAdmin(req)) return denyAdmin(res);
-    db.all(`SELECT * FROM appointments ORDER BY created_at DESC`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ bookings: rows });
+setUpDatabase()
+    .then(() => {
+        console.log(`Database: ${databaseLabel}`);
+        console.log(`Email notifications: ${emailMode}`);
+        app.listen(PORT, '0.0.0.0', () => console.log(`Coast Turtle's IT Land server running on http://localhost:${PORT}`));
+    })
+    .catch(error => {
+        console.error(`Could not open the database (${databaseLabel}):`, error.message);
+        process.exit(1);
     });
-});
-
-app.patch('/api/bookings/:id', (req, res) => {
-    if (!isAdmin(req)) return denyAdmin(res);
-    const allowedStatuses = ['new', 'confirmed', 'completed', 'cancelled'];
-    const { status } = req.body;
-    if (!allowedStatuses.includes(status)) return res.status(400).json({ error: 'Invalid booking status' });
-    db.run(`UPDATE appointments SET status = ? WHERE id = ?`, [status, req.params.id], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!this.changes) return res.status(404).json({ error: 'Booking not found' });
-        res.json({ success: true });
-    });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Coast Turtle's IT Land Server running on http://localhost:${PORT}`);
-});

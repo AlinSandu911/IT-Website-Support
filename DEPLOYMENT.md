@@ -28,7 +28,7 @@ Do not test quote delivery by double-clicking `contact.html`; that uses a `file:
 
 ## Email setup
 
-New quotes and bookings are emailed to `antoniosandu21@gmail.com`. The server uses the first method that is configured:
+New repair and quote requests are emailed to `antoniosandu21@gmail.com`. The server uses the first method that is configured:
 
 1. **Resend (recommended, and required on Render):** sign up at resend.com with `antoniosandu21@gmail.com`, create an API key, and set it as `RESEND_API_KEY`. It sends over HTTPS, so it works on hosts that block email ports. Render blocks outgoing SMTP, which makes Gmail time out there.
 2. **Gmail:** create a Google app password and set `EMAIL_USER` and `EMAIL_PASS`. Works locally, but not on Render.
@@ -40,7 +40,7 @@ Also set a long random value for `ADMIN_API_KEY`. Copy `.env.example` to `.env` 
 
 The contact form now reports SMTP delivery honestly. If SMTP is unavailable, it opens a prepared email addressed to `antoniosandu21@gmail.com` rather than showing a false success message.
 
-The new `booking.html` page saves preferred appointment date, time, service, and location to the database. Open `admin.html` and enter `ADMIN_API_KEY` to view quote and booking records. Keep that page private and never share the admin key.
+Customers use one form on `contact.html` (anchor `#request`) to request a repair or quote; the preferred day and time are optional. Requests are saved to the `service_requests` table and emailed to you. Open `admin.html` and enter `ADMIN_API_KEY` to view requests, set their status (new / confirmed / completed / cancelled), and approve reviews. The old `booking.html` address redirects to the form. Keep the admin page private and never share the admin key.
 
 `privacy.html` and `terms.html` are starter business-policy pages. Review them with a solicitor or adjust them to match your final business setup before launch.
 
